@@ -8,10 +8,11 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Tests | PASS | `npm test` · 53/53 |
+| Unit tests | PASS | `npm test` · 53/53 |
+| Playwright E2E | PASS | `npm run test:e2e` · 6/6 chromium · production build를 loopback에서 기동해 검증 |
 | Production build | PASS | `npm run build` · static `/`, dynamic API routes |
-| GitHub CI | PASS | `main` commit `28cbf72` · Actions v7 · install, typecheck, lint, test, build, audit |
-| Vercel production | PASS | [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app) · deployment `dpl_A2kLZtGkmWnxoLeN268M1VTBCswp` |
+| GitHub CI | PASS | `main` commit `a22ba00` · verify + e2e job 모두 green (run 29342586113) |
+| Vercel production | PASS | [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app) · `a22ba00` 자동 배포 후 home `200`·Origin 없는 API `403` 재확인 |
 | Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability; `npm ls --depth=0` clean |
 | Security headers | PASS | local·public production response에서 CSP, COOP, CORP, Permissions-Policy, Referrer-Policy, nosniff, DENY 확인 |
 | Secret/code scan | PASS | source와 client static bundle에 key pattern 없음; explicit `any`, `@ts-ignore`, HTML injection, console, TODO 없음 |
@@ -31,13 +32,15 @@
 
 ## Browser evidence
 
-| ID | Result | Observation |
+BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된다. BROWSER-005와 URL 분석 적용 흐름(BROWSER-002 전반부)은 수동 검증으로 유지한다.
+
+| ID | Result | Coverage |
 |---|---|---|
-| BROWSER-001 | PASS | production build에서 Context → KPI → sample funnel → Diagnose → Hypothesis → Experiment → Validate → Adopt Decision을 8/8 완료하고 Markdown report 다운로드 |
-| BROWSER-002 | PASS | `https://example.com`의 title·description context를 추출하고 명시적으로 적용; 새로고침 후 project·8/8 state 복구 |
-| BROWSER-003 | PASS | 새로고침 후 첫 Tab이 `본문으로 건너뛰기`; Enter가 title로 라벨된 main에 포커스; section 선택도 새 main으로 포커스 이동 |
-| BROWSER-004 | PASS | Chrome responsive viewport 390px에서 sidebar, horizontal step nav, header actions, KPI와 Decision form reflow 확인 |
-| BROWSER-005 | PASS | 앱 source console error 없음. 설치된 확장의 Google Fonts 주입은 production CSP가 차단함을 확인 |
+| BROWSER-001 | PASS · 자동화 | `e2e/golden-loop.spec.ts` — 8단계 완주와 Markdown report 다운로드 단언 |
+| BROWSER-002 | PASS · 부분 자동화 | `e2e/persistence.spec.ts` — 새로고침 후 project·funnel state 복구; URL context 적용은 수동 검증 유지 |
+| BROWSER-003 | PASS · 자동화 | `e2e/accessibility.spec.ts` — 첫 Tab이 `본문으로 건너뛰기`에 포커스, Enter가 main으로 포커스 이동 |
+| BROWSER-004 | PASS · 자동화 | `e2e/mobile.spec.ts` — viewport 390px에서 horizontal overflow 0 단언과 핵심 UI 표시 |
+| BROWSER-005 | PASS · 수동 | 앱 source console error 없음. 설치된 확장의 Google Fonts 주입은 production CSP가 차단함을 확인 |
 
 ## Deployment evidence
 
