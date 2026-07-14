@@ -50,15 +50,15 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 
 | 단계 | 내용 | 상태 |
 |---|---|---|
-| Evidence-to-decision 루프 | 8단계 Measure Loop, 결정적 지표 계산, 사전 등록 실험, human decision | **운영 중** |
-| Source adapter 계약 | 모든 행동 데이터 소스를 동일한 evidence 스키마로 정규화하는 인터페이스 | 설계 중 |
-| First-party SDK | 스크립트 한 줄로 페이지뷰·클릭·rage/dead click·스크롤·세션 수집 | 로드맵 |
-| Ingest 서버 | 자체 이벤트 수신, 세션화, 보존 정책 | 로드맵 |
-| Measurement harness | 질문을 입력하면 퍼널·마찰 신호·세션 맥락 측정이 자동 구성 | 로드맵 |
-| External connectors | PostHog 등 기존 분석 도구를 read-only 어댑터로 연결 | 로드맵 |
-| Session replay | 사전 동의, 기본 마스킹, 짧은 보존을 전제로 한 세션 녹화 | 로드맵 |
+| Evidence-to-decision 루프 | 8단계 Measure Loop, 결정적 지표 계산, 사전 등록 실험, human decision | **구현** |
+| Source adapter 계약 | 모든 행동 데이터 소스를 동일한 evidence 스키마로 정규화하는 인터페이스 | **구현** |
+| First-party SDK | 스크립트 한 줄로 페이지뷰·클릭·rage/dead click·스크롤·세션 수집 | **구현** · 실수집은 사이트 프로비저닝 후 |
+| Ingest 서버 | 자체 이벤트 수신, 세션화, 90일 보존 | **구현** · Supabase/Upstash 연결 대기 |
+| Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성 측정이 구성 | **구현** (스킬 3종) |
+| External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
+| Session replay | 사전 동의, 기본 마스킹, 짧은 보존을 전제로 한 세션 녹화 | spec 확정 · 로드맵 |
 
-로드맵 항목은 단계별 spec과 실행 검증을 통과해야 아래 "현재 구현"으로 이동합니다.
+상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
 
 ## 현재 구현
 
@@ -72,10 +72,13 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 | UX 마찰 후보·근거·가설 편집 | 구현 |
 | 실험 사전 등록과 Before/After·guardrail 판정 | 구현 |
 | Human Decision·Markdown 리포트 | 구현 |
-| Playwright E2E — 8단계 루프·복구·키보드·모바일 reflow | 구현 |
+| Playwright E2E — 8단계 루프·복구·키보드·모바일·harness | 구현 |
+| 질문 → 측정 → Evidence 적용 (퍼널 이탈·마찰 신호·여정 연속성) | 구현 |
+| First-party SDK와 ingest 파이프라인 (동의 게이트·마스킹 기본) | 구현, 실수집은 프로비저닝 후 |
+| PostHog read-only 어댑터 | 구현, 실계정 검증 대기 |
 | 근거 기반 AI 진단·가설 제안 | 선택 기능, loopback development에서 명시적 활성화 필요 |
-| 자체 행동 데이터 수집·harness·외부 커넥터 | 로드맵 (위 표) |
-| 인증·팀 workspace·서버 DB | 로드맵 전제 조건, 설계 후 도입 |
+| Session replay | spec만 확정, 미구현 |
+| 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
 
 ## 제품 흐름
 
@@ -132,12 +135,13 @@ Personal v1은 인증 없는 유료 API proxy가 되지 않도록 provider를 `N
 npm run typecheck
 npm run lint
 npm test
+npm run test:sdk
 npm run build
 npm audit --omit=dev
 npm run test:e2e
 ```
 
-현재 53개 단위 테스트는 CSV, 퍼널 계산, 실험 판정, 저장소·workflow invariant, 공개 URL trust boundary, AI 계약과 fallback을 다룹니다. Playwright E2E는 8단계 golden loop, 새로고침 복구, 키보드 skip link, 390px 모바일 reflow를 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 165개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드를 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 8종은 8단계 golden loop, 복구, 키보드, 390px reflow와 harness 측정 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 
@@ -162,6 +166,8 @@ npm run test:e2e
 ## 문서
 
 - [Product Brief](docs/product-brief.md)
+- [Measurement Harness Spec](features/measurement-harness/spec.md)
+- [Session Replay Spec](features/session-replay/spec.md)
 - [Personal Product v1 Spec](features/personal-product-v1/spec.md)
 - [Architecture](docs/architecture.md)
 - [Data Model](docs/data-model.md)
