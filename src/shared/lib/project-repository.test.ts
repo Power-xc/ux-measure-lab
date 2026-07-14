@@ -166,7 +166,7 @@ test("STORAGE-003 validates exported JSON before import", () => {
   assert.equal(roundTrip.ok, true);
   assert.deepEqual(roundTrip.workspace, workspace);
 
-  const wrongVersion = importWorkspace('{"schemaVersion":2,"activeProjectId":null,"projects":[]}');
+  const wrongVersion = importWorkspace('{"schemaVersion":3,"activeProjectId":null,"projects":[]}');
   assert.equal(wrongVersion.ok, false);
   assert.equal(wrongVersion.error.code, "unsupported_version");
 

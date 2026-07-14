@@ -2,10 +2,17 @@ import type { Decision } from "../decision/model.ts";
 import type { ExperimentPlan, ExperimentResult } from "../experiment/model.ts";
 import type { FunnelStep } from "../measurement/model.ts";
 
-export const WORKSPACE_SCHEMA_VERSION = 1 as const;
+export const WORKSPACE_SCHEMA_VERSION = 2 as const;
 
 export type ProductStage = "idea" | "alpha" | "beta" | "live" | "growth";
 export type SourceKind = "measured" | "calculated" | "benchmark" | "assumed" | "inferred" | "qualitative";
+
+// 측정 소스 어휘의 단일 출처. harness 계약·스키마·invariant가 이 배열을 재사용한다.
+export const SOURCE_CAPABILITIES = ["funnel", "events", "paths", "interaction", "segments", "sessions", "recordings"] as const;
+export type SourceCapability = (typeof SOURCE_CAPABILITIES)[number];
+
+export const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
+export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
 export type EvidenceDirection = "supports" | "contradicts" | "context";
 
 export type ProjectContext = {
@@ -29,9 +36,18 @@ export type MetricDefinition = {
 
 export type FunnelImport = {
   fileName: string;
-  source: "csv" | "sample";
+  source: "csv" | "sample" | "adapter";
   importedAt: string;
   steps: FunnelStep[];
+};
+
+// 측정 출처 참조. 없으면 CSV·sample 기반의 기존 Evidence와 동일하게 동작한다.
+export type EvidenceSourceRef = {
+  adapterId: string;
+  capability: SourceCapability;
+  queryHash: string;
+  sampleSize: number;
+  confidence: ConfidenceLevel;
 };
 
 export type Evidence = {
@@ -46,6 +62,7 @@ export type Evidence = {
     period: string;
     segment: string;
   };
+  sourceRef?: EvidenceSourceRef; // 신규·선택. harness 측정에서만 채워진다.
 };
 
 export type FrictionCandidate = {
