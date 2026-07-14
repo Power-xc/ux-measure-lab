@@ -1,6 +1,6 @@
 # Verification
 
-> **검증일:** 2026-07-14 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS
+> **검증일:** 2026-07-15 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `050e3af`
 
 ## Release gate
 
@@ -8,15 +8,17 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests | PASS | `npm test` · 53/53 |
-| Playwright E2E | PASS | `npm run test:e2e` · 6/6 chromium · production build를 loopback에서 기동해 검증 |
-| Production build | PASS | `npm run build` · static `/`, dynamic API routes |
-| GitHub CI | PASS | `main` commit `a22ba00` · verify + e2e job 모두 green (run 29342586113) |
-| Vercel production | PASS | [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app) · `a22ba00` 자동 배포 후 home `200`·Origin 없는 API `403` 재확인 |
-| Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability; `npm ls --depth=0` clean |
-| Security headers | PASS | local·public production response에서 CSP, COOP, CORP, Permissions-Policy, Referrer-Policy, nosniff, DENY 확인 |
-| Secret/code scan | PASS | source와 client static bundle에 key pattern 없음; explicit `any`, `@ts-ignore`, HTML injection, console, TODO 없음 |
-| File size | PASS | 모든 source/test/style 300줄 이하; 최대 277줄, production 최대 268줄 |
+| Unit tests (root) | PASS | `npm test` · 165/165 |
+| Unit tests (SDK) | PASS | `npm run test:sdk` · 69/69 (packages/collector, jsdom) |
+| Playwright E2E | PASS | `npm run test:e2e` · 8/8 chromium · production build를 loopback에서 기동해 검증 |
+| Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/product-context`·`/api/ingest`·`/api/harness/measure` |
+| GitHub CI | PASS | `main`의 verify(typecheck·lint·test·sdk·build·audit) + e2e job green |
+| Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability · 런타임 의존성은 Next/React뿐(Supabase·Upstash·PostHog 전부 fetch 직호출) |
+| Security headers | PASS | production build 로컬 응답에서 CSP, COOP, CORP, Permissions-Policy, Referrer-Policy, nosniff, DENY 확인 |
+| Secret/code scan | PASS | pre-commit secret-scan 게이트 + source에 explicit `any`, `@ts-ignore`, HTML injection, console, TODO 없음 |
+| File size | PASS | 모든 source/test/style 300줄 이하 |
+
+공개 배포는 의도적으로 내려간 상태다(개발 완료 릴리스에서 재공개). 아래 Deployment evidence는 마지막 공개 빌드 기준의 기록이며 재공개 시 재검증한다.
 
 ## Test inventory
 
@@ -29,6 +31,11 @@
 | Workflow | FLOW-001~002 | AI 없는 8단계 golden loop, downstream invalidation, preregistration gate, escaped report |
 | Product URL | URL-001~010 | private/reserved target, mixed DNS, redirect, inert extraction, byte/type, Origin, abort |
 | AI contract | AI-001~010 | evidence allowlist, injection, unknown field, obfuscated numeric·decision language, timeout, production provider gate, route |
+| Harness 계약 | contract·invariants·updates | unknown field·수치 위조 거부, sourceRef invariant, v1→v2 무손실 마이그레이션·백업, harness evidence 적용 규칙 |
+| Harness 측정 | catalog·measure-service·registry·route | 스킬-capability 매핑, 결정적 파생 계산 재사용, insufficient_sample, queryHash 재현성, same-origin 거부, 어댑터 디스패치 |
+| PostHog 어댑터 | query·adapter·http-client | fixture 정규화가 계약 검증 통과, 오류 매핑(401·429·5xx), token-bucket 산술, 교차 어댑터 스키마 동형(HAC-09) |
+| Ingest 백엔드 | backends | PostgREST 요청 형태·헤더, Upstash 고정창 산술·장애 시 in-memory degrade, env 미설정 시 안전기본값 유지 |
+| Collector SDK | 69 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅 |
 
 ## Browser evidence
 
@@ -41,6 +48,8 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 | BROWSER-003 | PASS · 자동화 | `e2e/accessibility.spec.ts` — 첫 Tab이 `본문으로 건너뛰기`에 포커스, Enter가 main으로 포커스 이동 |
 | BROWSER-004 | PASS · 자동화 | `e2e/mobile.spec.ts` — viewport 390px에서 horizontal overflow 0 단언과 핵심 UI 표시 |
 | BROWSER-005 | PASS · 수동 | 앱 source console error 없음. 설치된 확장의 Google Fonts 주입은 production CSP가 차단함을 확인 |
+| BROWSER-006 | PASS · 자동화 | `e2e/harness.spec.ts` — 빈 aggregate에서 측정 실행 시 수치 없이 `insufficient_sample` 카드 표시 (HAC-11의 UI 계약) |
+| BROWSER-007 | PASS · 자동화 | `e2e/harness.spec.ts` — mock 응답으로 측정 성공 시 draft 유지·세션 캐시 재사용·명시적 적용 후에만 저장 (HAC-08·HAC-10) |
 
 ## Deployment evidence
 
@@ -69,6 +78,23 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 | AC-12 keyboard·desktop·mobile | PASS | BROWSER-001·003·004 |
 | AC-13 zero-warning quality | PASS | release gate and [Security](security.md) |
 | AC-14 truthful docs | PASS | README capability table, Architecture, Data Model, Runbook, this matrix |
+
+## Harness acceptance criteria (measurement-harness spec)
+
+| AC | Result | Evidence |
+|---|---|---|
+| HAC-01 v1 무손실 마이그레이션·백업 | PASS | project-repository 마이그레이션 테스트 — 값 무변형·백업 슬롯 보존·미래 version 거부 |
+| HAC-02 동의 전 큐잉 금지 | PASS | collector consent 테스트 — granted 전 큐잉·전송 0 |
+| HAC-03 입력값 수집 불가 | PASS | collector mask 테스트 — 설정으로도 input·password·결제 필드 수집 불가 |
+| HAC-04 rage 결정적 검출 | PASS | 30px·1s·3연속 고정 타임스탬프 테스트 |
+| HAC-05 ingest 거부 계약 | PASS | 미등록 키 401·정지 403·불허 Origin 403·한도 429+Retry-After |
+| HAC-06 부분 드롭 수용 | PASS | 무효 이벤트 드롭 + 202 accepted/dropped |
+| HAC-07 보존 정책 | 코드 검증 | 파티션 DETACH·DROP 잡 SQL 작성·검토 완료 — 실행 증거는 Supabase 프로비저닝 후 |
+| HAC-08 queryHash 재현성 | PASS | measure-service 결정성 테스트 + BROWSER-007 세션 캐시 재사용 |
+| HAC-09 교차 어댑터 동형 | PASS | first-party·PostHog 동일 질의 → 동일 스키마 정규화 (fixture) |
+| HAC-10 명시 적용 전 불변 | PASS | applyHarnessEvidence 테스트 + BROWSER-007 draft 유지 |
+| HAC-11 insufficient_sample | PASS | measure-service 미달 테스트 + BROWSER-006 UI 표시 |
+| HAC-12 기존 게이트 무회귀 | PASS | 기존 스위트 전부 포함 165/165·69/69·E2E 8/8 |
 
 ## AI evaluation rubric
 
@@ -100,8 +126,11 @@ AI-001~010의 provider mock, injection fixture와 client validation이 위 자�
 
 ## Deliberate limits
 
-- 통계적 유의성, p-value, segment 분석은 구현하지 않았다.
-- live analytics, heatmap, replay, auth, team, cloud sync, server DB는 범위 밖이다.
+- 통계적 유의성, p-value, segment 자동 판정은 구현하지 않았다.
+- 실서비스 연결은 `NOT_RUN`: Supabase·Upstash·PostHog 실계정 호출은 프로비저닝 전이다. env 미설정 시 안전기본값(빈 스토어 → 수집 0, not_configured 폴백)이 게이트로 검증되어 있고, 실연결 후 dogfood 실측이 다음 검증 단계다.
+- PostHog 질의 빌더는 순수 함수로 분리되어 있으나 실제 엔드포인트 계약은 첫 실호출 전 공식 스키마로 재확인해야 한다(`NOT_CHECKED` 주석 기준).
+- session replay는 [spec](../features/session-replay/spec.md)만 존재하며 구현하지 않았다. 사전 동의·기본 마스킹·짧은 보존이 선행 조건이다.
 - 실제 OpenAI provider 품질·비용은 `NOT_RUN`; mock contract와 fallback만 release gate다.
-- `useWorkspace`의 저장 실패 state 유지·재시도 경로는 구현 대조를 완료했지만 전용 hook-level 자동화 테스트는 아직 없다. `STORAGE-005`는 repository가 write failure를 반환하는 것까지만 검증한다.
-- VoiceOver·Safari·forced-colors는 후속 compatibility matrix이며 Personal v1 AC에는 포함하지 않았다.
+- `useWorkspace`의 저장 실패 state 유지·재시도 경로는 전용 hook-level 자동화 테스트가 아직 없다.
+- VoiceOver·Safari·forced-colors는 후속 compatibility matrix이며 AC에 포함하지 않았다.
+- 인증·팀 workspace는 범위 밖이다. 다중 사용자 전 RLS 도입이 전제다.
