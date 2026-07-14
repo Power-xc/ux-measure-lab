@@ -6,8 +6,11 @@ import { validateExperimentPlan } from "../../features/project-workflow/lib/proj
 import { MAX_TEXT_LENGTH, validateProductUrl } from "./input-policy.ts";
 import { isProjectStateConsistent } from "./project-invariants.ts";
 import {
+  CONFIDENCE_LEVELS,
+  SOURCE_CAPABILITIES,
   WORKSPACE_SCHEMA_VERSION,
   type Evidence,
+  type EvidenceSourceRef,
   type FrictionCandidate,
   type FunnelImport,
   type Hypothesis,
@@ -96,8 +99,18 @@ function isFunnelImport(value: unknown): value is FunnelImport {
     return false;
   }
   return isRequiredString(value.fileName)
-    && isEnum(value.source, ["csv", "sample"])
+    && isEnum(value.source, ["csv", "sample", "adapter"])
     && isIsoDate(value.importedAt);
+}
+
+// 구조·타입만 검증한다. sampleSize > 0 같은 도메인 규칙은 project-invariants가 강제한다.
+function isSourceRef(value: unknown): value is EvidenceSourceRef {
+  if (!isRecord(value)) return false;
+  return isRequiredString(value.adapterId)
+    && isEnum(value.capability, SOURCE_CAPABILITIES)
+    && isRequiredString(value.queryHash)
+    && isSafeInteger(value.sampleSize)
+    && isEnum(value.confidence, CONFIDENCE_LEVELS);
 }
 
 function isEvidence(value: unknown): value is Evidence {
@@ -110,7 +123,8 @@ function isEvidence(value: unknown): value is Evidence {
     && isRequiredString(value.provenance.source)
     && isIsoDate(value.provenance.observedAt)
     && isRequiredString(value.provenance.period)
-    && isRequiredString(value.provenance.segment);
+    && isRequiredString(value.provenance.segment)
+    && (value.sourceRef === undefined || isSourceRef(value.sourceRef));
 }
 
 function isFriction(value: unknown): value is FrictionCandidate {

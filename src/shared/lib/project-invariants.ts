@@ -1,8 +1,15 @@
 import type { ExperimentEvaluationInput, ExperimentPlan } from "../../entities/experiment/model.ts";
-import type { Project } from "../../entities/project/model.ts";
+import { CONFIDENCE_LEVELS, SOURCE_CAPABILITIES, type Evidence, type Project } from "../../entities/project/model.ts";
 
 function hasReferences(ids: readonly string[], available: ReadonlySet<string>): boolean {
   return ids.every((id) => available.has(id));
+}
+
+// sourceRef가 붙은 Evidence의 도메인 규칙: 실제 표본이 있어야 하고 어휘가 유효해야 한다.
+function hasValidSourceRef(evidence: Evidence): boolean {
+  const ref = evidence.sourceRef;
+  if (!ref) return true;
+  return ref.sampleSize > 0 && SOURCE_CAPABILITIES.includes(ref.capability) && CONFIDENCE_LEVELS.includes(ref.confidence);
 }
 
 function inputMatchesPlan(input: ExperimentEvaluationInput, plan: ExperimentPlan): boolean {
@@ -19,6 +26,7 @@ export function isProjectStateConsistent(project: Project): boolean {
     .every((value) => value.trim().length > 0);
   const evidenceIds = project.evidence.map((item) => item.id);
   if (new Set(evidenceIds).size !== evidenceIds.length) return false;
+  if (!project.evidence.every(hasValidSourceRef)) return false;
   const availableEvidence = new Set(evidenceIds);
 
   if (project.metric && !contextReady) return false;
