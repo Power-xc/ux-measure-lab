@@ -2,7 +2,9 @@
 
 > Test experiences. Measure impact.
 
-**Live:** [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app) · **Repository:** [Power-xc/ux-measure-lab](https://github.com/Power-xc/ux-measure-lab)
+**Repository:** [Power-xc/ux-measure-lab](https://github.com/Power-xc/ux-measure-lab)
+
+> measurement harness 로드맵을 개발 중입니다. 공개 데모는 전체 개발이 완료된 릴리스에서 다시 공개합니다.
 
 UX를 데이터로 개선하려면 오늘은 배워야 할 도구가 너무 많습니다. 퍼널은 분석 도구에, 클릭과 마찰 신호는 히트맵 도구에, 세션 맥락은 녹화 도구에, A/B 테스트는 또 다른 도구에 흩어져 있습니다. 각 도구의 개념·설정·권한을 익혀야 하고, 그렇게 얻은 조각난 결과를 사람이 직접 이어 붙여야 비로소 결정이 나옵니다.
 
