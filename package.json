@@ -1,0 +1,32 @@
+{
+  "name": "ux-measure-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/features/funnel-import/lib/parse-funnel-csv.test.ts src/features/measure-loop/lib/calculate-funnel.test.ts src/features/experiment/lib/evaluate-experiment.test.ts src/shared/lib/project-repository.test.ts src/features/project-workflow/lib/project-workflow.test.ts src/features/product-context/server/product-context.test.ts src/features/ai-diagnosis/server/ai-diagnosis.test.ts"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
+  }
+}
