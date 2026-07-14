@@ -9,7 +9,8 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/features/funnel-import/lib/parse-funnel-csv.test.ts src/features/measure-loop/lib/calculate-funnel.test.ts src/features/experiment/lib/evaluate-experiment.test.ts src/shared/lib/project-repository.test.ts src/features/project-workflow/lib/project-workflow.test.ts src/features/product-context/server/product-context.test.ts src/features/ai-diagnosis/server/ai-diagnosis.test.ts"
+    "test": "node --test src/features/funnel-import/lib/parse-funnel-csv.test.ts src/features/measure-loop/lib/calculate-funnel.test.ts src/features/experiment/lib/evaluate-experiment.test.ts src/shared/lib/project-repository.test.ts src/features/project-workflow/lib/project-workflow.test.ts src/features/product-context/server/product-context.test.ts src/features/ai-diagnosis/server/ai-diagnosis.test.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "16.2.10",
@@ -17,6 +18,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
