@@ -42,7 +42,7 @@ function batch(events: unknown[], over: Record<string, unknown> = {}) {
 }
 
 function ev(over: Record<string, unknown> = {}) {
-  return { eid: "e_1", t: "pv", ts: NOW_ISO, p: "/pricing", ref: "google.com", props: {}, ...over };
+  return { eid: "e_1", t: "pv", ts: NOW_MS, p: "/pricing", ref: "google.com", props: {}, ...over };
 }
 
 // A realistic browser sends a UA + locale, so classifyBot returns "clean".
@@ -133,11 +133,11 @@ test("gzip inflates within bounds and rejects a decompression bomb after re-boun
 
 test("skew correction clamps a future client timestamp to the server window", async () => {
   const { handler, eventStore } = await makeCtx();
-  const future = new Date(NOW_MS + 10 * 24 * 60 * 60_000).toISOString();
+  const future = NOW_MS + 10 * 24 * 60 * 60_000;
   const res = await handler(req(batch([ev({ ts: future })])));
   assert.equal(res.status, 202);
   assert.equal(eventStore.inserted[0].ts, new Date(NOW_MS + DEFAULT_SKEW.maxFutureMs).toISOString());
-  assert.equal(eventStore.inserted[0].clientTs, future);
+  assert.equal(eventStore.inserted[0].clientTs, new Date(future).toISOString());
 });
 
 test("bot traffic is dropped when the site opts in and flagged otherwise", async () => {

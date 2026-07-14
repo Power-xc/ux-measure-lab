@@ -113,7 +113,7 @@ export function createPostHandler(deps: IngestDeps) {
         continue;
       }
       const event = validation.event;
-      const clientTsMs = Date.parse(event.ts);
+      const clientTsMs = event.ts;
       const ts = correctTimestamp({ clientTsMs, sentAtMs, receivedAtMs: nowMs }, deps.skew);
       stored.push({
         siteId: site.id,

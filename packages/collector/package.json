@@ -1,0 +1,15 @@
+{
+  "name": "@ux-measure-lab/collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "UX MeasureLab first-party behavior collection SDK (zero runtime dependencies).",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "jsdom": "^24.1.3"
+  }
+}
