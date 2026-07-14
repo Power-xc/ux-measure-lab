@@ -1,0 +1,211 @@
+{
+  "iconSet": "lucide",
+  "package": "lucide-static",
+  "fill": false,
+  "roles": {
+    "list": {
+      "line": "list",
+      "fill": null
+    },
+    "house": {
+      "line": "home",
+      "fill": null
+    },
+    "magnifying-glass": {
+      "line": "search",
+      "fill": null
+    },
+    "x": {
+      "line": "x",
+      "fill": null
+    },
+    "caret-left": {
+      "line": "chevron-left",
+      "fill": null
+    },
+    "caret-right": {
+      "line": "chevron-right",
+      "fill": null
+    },
+    "caret-up": {
+      "line": "chevron-up",
+      "fill": null
+    },
+    "caret-down": {
+      "line": "chevron-down",
+      "fill": null
+    },
+    "arrow-left": {
+      "line": "arrow-left",
+      "fill": null
+    },
+    "dots-three": {
+      "line": "more-horizontal",
+      "fill": null
+    },
+    "dots-three-vertical": {
+      "line": "more-vertical",
+      "fill": null
+    },
+    "gear": {
+      "line": "settings",
+      "fill": null
+    },
+    "plus": {
+      "line": "plus",
+      "fill": null
+    },
+    "pencil-simple": {
+      "line": "edit",
+      "fill": null
+    },
+    "copy": {
+      "line": "copy",
+      "fill": null
+    },
+    "trash": {
+      "line": "trash",
+      "fill": null
+    },
+    "share-network": {
+      "line": "share-2",
+      "fill": null
+    },
+    "check": {
+      "line": "check",
+      "fill": null
+    },
+    "download-simple": {
+      "line": "download",
+      "fill": null
+    },
+    "upload-simple": {
+      "line": "upload",
+      "fill": null
+    },
+    "link": {
+      "line": "link",
+      "fill": null
+    },
+    "funnel": {
+      "line": "filter",
+      "fill": null
+    },
+    "sliders-horizontal": {
+      "line": "sliders",
+      "fill": null
+    },
+    "paper-plane-tilt": {
+      "line": "send",
+      "fill": null
+    },
+    "microphone": {
+      "line": "mic",
+      "fill": null
+    },
+    "image": {
+      "line": "image",
+      "fill": null
+    },
+    "file-text": {
+      "line": "file-text",
+      "fill": null
+    },
+    "paperclip": {
+      "line": "paperclip",
+      "fill": null
+    },
+    "sparkle": {
+      "line": "sparkles",
+      "fill": null
+    },
+    "arrows-clockwise": {
+      "line": "rotate-cw",
+      "fill": null
+    },
+    "stop": {
+      "line": "square",
+      "fill": null
+    },
+    "info": {
+      "line": "info",
+      "fill": null
+    },
+    "warning": {
+      "line": "alert-triangle",
+      "fill": null
+    },
+    "x-circle": {
+      "line": "x-circle",
+      "fill": null
+    },
+    "check-circle": {
+      "line": "check-circle",
+      "fill": null
+    },
+    "bell": {
+      "line": "bell",
+      "fill": null
+    },
+    "heart": {
+      "line": "heart",
+      "fill": null
+    },
+    "bookmark-simple": {
+      "line": "bookmark",
+      "fill": null
+    },
+    "star": {
+      "line": "star",
+      "fill": null
+    },
+    "user": {
+      "line": "user",
+      "fill": null
+    },
+    "folder": {
+      "line": "folder",
+      "fill": null
+    },
+    "archive": {
+      "line": "archive",
+      "fill": null
+    },
+    "calendar-blank": {
+      "line": "calendar",
+      "fill": null
+    },
+    "clock": {
+      "line": "clock",
+      "fill": null
+    },
+    "eye": {
+      "line": "eye",
+      "fill": null
+    },
+    "eye-slash": {
+      "line": "eye-off",
+      "fill": null
+    },
+    "wifi-high": {
+      "line": "wifi",
+      "fill": null
+    },
+    "bluetooth": {
+      "line": "bluetooth",
+      "fill": null
+    },
+    "barcode": {
+      "line": "barcode",
+      "fill": null
+    },
+    "chat-circle": {
+      "line": "message-circle",
+      "fill": null
+    },
+    "plus-circle": {
+      "line": "plus-circle",
+      "fill": null
+    }
+  }
+}

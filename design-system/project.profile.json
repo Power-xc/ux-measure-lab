@@ -1,0 +1,45 @@
+{
+  "$schema": "../schema/tokens.schema.md",
+  "name": "ux-measure-lab",
+  "description": "UX MeasureLab evidence-to-decision workspace for measurable product experiments.",
+
+  "source": "core",
+  "mode": "light",
+  "iconSet": "lucide",
+  "$comment_iconSet": "아이콘 세트 선택 (7개 중 1개 필수): phosphor, lucide, heroicons, remix, tabler, material-symbols, fluent",
+
+  "brand": {
+    "displayFont": "Pretendard",
+    "bodyFont": "Pretendard",
+    "seedColor": "#0A1A3A",
+    "accentColor": "#2563FF",
+    "neutralBase": "#0A1A3A",
+    "$comment_brand": "seedColor: hex to regenerate neutral (gray) ramp with subtle tint; neutralBase: hex to override the tint source; accentColor: hex for role-based accent/link re-theming (overrides seedColor)"
+  },
+
+  "density": "cozy",
+  "platform": ["mobile", "web"],
+  "radiusScale": 1.0,
+
+  "voice": {
+    "personality": "clear, evidence-led, calm",
+    "register": "concise-professional"
+  },
+
+  "overrides": {
+    "$comment": "Direct token-path overrides win over everything. e.g. \"radius.8\": 10",
+    "font-family.brand": "Pretendard",
+    "text.primary": "#0A1A3A",
+    "icon.primary": "#0A1A3A",
+    "fill.primary": "#2563FF",
+    "fill.primary-hover": "#1D4ED8",
+    "fill.primary-pressed": "#1E40AF",
+    "border.primary-focused": "#2563FF",
+    "fill.feedback-info": "#2563FF",
+    "border.feedback-info": "#93B4FF",
+    "text.feedback-info-01": "#1D4ED8",
+    "text.feedback-info-02": "#1D4ED8",
+    "text.feedback-info-03": "#2563FF",
+    "text.feedback-info-04": "#2563FF"
+  }
+}
