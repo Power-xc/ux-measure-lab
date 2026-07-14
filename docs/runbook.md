@@ -1,134 +1,200 @@
 # Runbook
 
+## Operating scope
+
+현재 운영 형태는 owner가 직접 사용하는 local-first personal workspace다. 인증·RLS·조직 기능이 없으므로 public multi-tenant 운영은 지원하지 않는다. 프로덕션 데모와 자동 배포는 동결되어 있다.
+
 ## Local development
 
-이 저장소는 Node 26에서 검증했다. lockfile과 정확히 맞추려면 다음 명령을 사용한다.
+이 저장소는 Node 26 기준으로 검증한다.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-기본 주소는 `http://127.0.0.1:3000`이며 dev server는 loopback에만 bind한다.
+기본 주소는 `http://127.0.0.1:3000`이며 dev server는 loopback에만 bind한다. 외부 backend 없이도 UI와 결정적 workflow가 동작한다.
 
-## Production build check
+## Environment configuration
+
+`.env.example`을 기준으로 `.env.local`을 만든다. 실제 secret은 source, browser storage와 log에 넣지 않는다.
+
+| 기능 | 필수 env | 없을 때 |
+|---|---|---|
+| Supabase ingest | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | 빈 InMemory site/event store; ingest `401` |
+| First-party aggregate | 위 두 값 + `SUPABASE_SITE_ID` | 빈 InMemory aggregate; `insufficient_sample` |
+| Durable ingest limit | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | process-local limiter |
+| PostHog connector | `POSTHOG_HOST`, `POSTHOG_PROJECT_ID`, `POSTHOG_API_KEY` | `not_configured` |
+| Optional diagnosis provider | `UX_MEASURE_AI_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_MODEL` | 결정적 초안 |
+
+각 backend는 필수 값이 모두 있을 때만 활성화된다. 원격 Supabase·Upstash URL은 HTTPS여야 하며 HTTP는 loopback 개발 주소만 허용한다. 일부만 설정하면 해당 backend는 안전 기본값을 사용한다. 설정 변경 후 server를 재시작한다.
+
+PostHog host는 현재 다음 cloud base URL만 지원한다.
+
+```text
+https://us.posthog.com
+https://eu.posthog.com
+```
+
+Personal API key는 연결할 project의 read 범위만 허용한다. 실제 Query API endpoint와 HogQL event 이름은 운영 호출 전에 해당 project의 현재 공식 schema로 재확인한다.
+
+## Supabase setup
+
+저장소의 SQL은 자동 적용되지 않는다. 새 project에서는 다음 순서로 Supabase SQL editor에서 실행한다.
+
+1. `supabase/migrations/0001_ingest.sql`: sites, partitioned events, sessions.
+2. `supabase/migrations/0002_aggregates.sql`: service-role aggregate RPC.
+3. `supabase/jobs.sql`: partition, retention, session rollup, visitor deletion 함수.
+4. `jobs.sql` 하단의 cron 등록문을 운영 환경에 맞게 검토한 뒤 활성화한다.
+
+적용 전 database backup과 복구 방법을 확인한다. 적용 후 다음을 점검한다.
+
+```sql
+select to_regclass('public.sites'), to_regclass('public.events'), to_regclass('public.sessions');
+
+select routine_name
+from information_schema.routines
+where routine_schema = 'public'
+  and routine_name in ('funnel_counts', 'interaction_counts', 'path_reach');
+```
+
+`jobs.sql`의 session rollup은 30분 gap을 구현하지만 24시간 강제 분할은 아직 없다. 기본 partition retention은 90일이며, 사이트별 `retention_days < 90` 세밀한 delete도 아직 없다.
+
+## Dogfood site provisioning
+
+사이트 키와 insert SQL을 로컬 stdout으로 만든다.
+
+```bash
+node scripts/provision-site.mjs \
+  --name "My Product" \
+  --project "local-project-id" \
+  --origin "https://product.example.com"
+```
+
+출력에는 다음이 포함된다.
+
+- 한 번만 확인할 수 있는 `umlk_` site key
+- SHA-256 hash를 저장하는 `sites` insert SQL
+- collector 설치 snippet 예시
+
+Insert SQL을 Supabase SQL editor에서 실행하고 생성된 site ID를 확인한다.
+
+```sql
+select id, name, project_ref, key_prefix, allowed_origins, disabled_at
+from sites
+where project_ref = 'local-project-id'
+order by created_at desc
+limit 1;
+```
+
+그 ID를 server의 `SUPABASE_SITE_ID`로 설정한다. Raw site key는 제품의 collector 초기화에만 사용하고 별도 source file에 저장하지 않는다. Provision script의 `/ml.js`는 배포 경로 예시이므로 실제 collector bundle을 제공하는 경로와 일치시켜야 한다.
+
+## Collector consent integration
+
+Collector의 기본 설정은 동의 전 수집을 차단한다. Host 제품은 목적·항목·보존 기간을 고지하는 consent UI를 제공하고 사용자의 선택을 전달한다.
+
+```javascript
+ml("consent", "granted");
+ml("consent", "denied");
+```
+
+동의 전에는 pageview도 큐잉하지 않는다. GPC/DNT 신호는 기본적으로 hard block이다. input과 결제 필드는 설정으로 수집을 켤 수 없다.
+
+## Ingest smoke check
+
+1. Site의 `allowed_origins`와 browser request의 `Origin`이 정확히 같은지 확인한다.
+2. 제품에서 동의 전 Network에 ingest 요청이 없는지 확인한다.
+3. 동의 후 `/api/ingest`가 `202`와 `{ accepted, dropped }`를 반환하는지 확인한다.
+4. Supabase `events`의 `site_id`, type, masked path와 timestamp를 확인한다.
+5. Raw input value, full URL, raw user agent가 저장되지 않았는지 확인한다.
+
+상태별 의미:
+
+| 상태 | 의미 | 점검 |
+|---|---|---|
+| `401 invalid_site_key` | env 미설정 또는 key hash 불일치 | site row와 Supabase env |
+| `403 origin_not_allowed` | Origin allowlist 불일치 | scheme, host, port 정확성 |
+| `429 rate_limited` | site 또는 IP window 초과 | Retry-After, Upstash 상태 |
+| `503 unavailable` | store 또는 backend 실패 | Supabase status·key·REST 응답 |
+
+Upstash 장애 시 limiter는 process-local fallback을 사용한다. 이 상태가 지속되면 분산된 전역 quota가 아니므로 장애를 복구한 뒤 abuse 지표를 확인한다.
+
+## Harness smoke check
+
+1. Context와 confirmed KPI, funnel을 준비한다.
+2. Diagnosis의 행동 데이터 섹션에서 질문과 실행 가능한 스킬을 선택한다.
+3. 기간과 스킬 파라미터를 입력하고 capability가 맞는 adapter를 선택한다.
+4. **측정 실행** 후 표본, provenance, confidence와 한계를 검토한다.
+5. 수치가 타당할 때만 **Evidence로 적용**한다.
+
+Supabase env가 없거나 선택 기간에 표본이 없거나 시작·종료 시각이 같으면 `insufficient_sample`이 정상이다. 이 outcome에는 수치가 없어야 한다. Adapter를 바꿔도 `MeasurementOutcome`과 provenance 구조는 동일해야 한다.
+
+First-party RPC 실패 시 다음을 확인한다.
+
+- `SUPABASE_SITE_ID`가 실제 site UUID인지
+- `0002_aggregates.sql`이 적용됐는지
+- service role에 RPC execute 권한이 있는지
+- 요청 window가 event `ts` 범위와 겹치는지
+- funnel step이 event type 또는 normalized path와 일치하는지
+
+PostHog의 `not_configured`, `unauthorized`, `rate_limited`, `invalid_response`는 Project를 변경하지 않는다. `429`이면 outcome의 retry delay 이후 다시 실행한다.
+
+현재 first-party는 rage/dead interaction만 측정한다. `error` 신호와 segment가 붙은 funnel은 수집·집계 경로가 추가되기 전까지 `unsupported_capability`가 정상이다.
+
+## Retention and deletion operations
+
+Cron을 활성화한 뒤 정기적으로 다음을 확인한다.
+
+```sql
+select jobname, schedule, active from cron.job order by jobname;
+
+select inhrelid::regclass as partition
+from pg_inherits
+where inhparent = 'events'::regclass
+order by 1;
+```
+
+방문자 삭제 요청은 raw anon ID를 ingest와 같은 SHA-256 방식으로 hash한 뒤 관리 함수에 전달한다.
+
+```sql
+select delete_visitor('site-uuid'::uuid, 'sha256-anon-id');
+```
+
+삭제 후 `events`와 `sessions` 모두에서 해당 hash가 없는지 확인한다. 현재 public deletion endpoint와 UI는 없으므로 운영자가 요청자 확인과 실행 기록을 별도로 관리한다.
+
+## Backup and recovery
+
+Workspace 상단 **백업**은 schema v2 전체 상태를 JSON으로 저장한다. 브라우저 데이터 삭제, 중요한 Decision, schema 변경 전 백업한다.
+
+복원은 현재 workspace를 먼저 다운로드한 뒤 선택한 JSON으로 전체 상태를 교체한다. Import는 version, record schema, 계산 결과와 cross-record invariant를 재검증한다. v1 workspace를 읽을 때는 원본을 migration backup slot에 보존한 뒤 v2로 승격한다.
+
+손상된 storage는 자동 덮어쓰지 않는다. 원본을 내려받고 빈 workspace로 복구한 뒤 마지막 정상 backup을 복원한다. storage key 이름은 `ux-measure-lab.workspace.v1`이지만 payload version은 2다.
+
+## Full verification gate
 
 ```bash
 npm run typecheck
 npm run lint
 npm test
+npm run test:sdk
 npm run build
-npm run start
+npm run test:e2e
 ```
 
-`next start` 전에는 성공한 `.next` production build가 필요하다. 기본적으로 server DB와 migration은 없다.
+추가 수동 확인:
 
-## Production deployment
+- 390px와 desktop에서 Context → Decision 전체 흐름
+- 동의 전 collector request 0건과 민감 input 미수집
+- ingest의 Origin 거부·rate limit·Supabase failure
+- harness insufficient sample에 수치가 없는지
+- 측정 실행만으로 Project가 바뀌지 않고 명시 적용 후에만 Evidence가 추가되는지
+- server secret이 client bundle과 response에 없는지
+- cron의 가장 오래된 partition age와 visitor deletion 결과
 
-Production URL은 [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app)이다. GitHub `main`이 Vercel 프로젝트와 연결되어 push 이후 자동 배포된다. 수동 배포가 필요하면 검증 완료 후 다음 명령을 사용한다.
+## Known operational gaps
 
-```bash
-npx vercel --prod --yes
-```
-
-production runtime은 OpenAI provider를 호출하지 않고 결정적 fallback만 사용한다. 공개 AI를 활성화하려면 인증과 durable user quota를 별도 설계해야 한다.
-
-## Optional AI provider
-
-AI는 기본 비활성 상태다. `.env.local`을 만들고 `npm run dev`로 실행했을 때만 외부 provider를 호출할 수 있다.
-
-```env
-UX_MEASURE_AI_ENABLED=true
-OPENAI_API_KEY=replace_with_server_key
-OPENAI_MODEL=gpt-5.6-luna
-```
-
-설정 후 dev server를 재시작한다. UI의 AI 요청 결과가 `결정적 초안`이면 다음을 확인한다.
-
-1. `UX_MEASURE_AI_ENABLED`가 정확히 `true`인지 확인한다.
-2. key가 server process environment에 있는지 확인한다.
-3. provider 응답, quota와 network egress를 확인한다.
-4. 잘못된 출력도 의도적으로 fallback되므로 같은 project의 evidence가 유효한지 확인한다.
-
-provider 실패는 workflow를 차단하지 않는다. KPI·verdict·Decision은 provider 상태와 무관하다.
-
-provider는 loopback에 bind된 development server에서만 호출된다. `npm run build && npm run start`와 공개 도메인은 인증과 durable quota가 없으므로 항상 결정적 fallback을 사용한다.
-
-## CSV operation
-
-필수 header는 다음 순서다.
-
-```csv
-step_id,step_name,users
-```
-
-- UTF-8 comma-separated CSV
-- 1MB 이하
-- 2~100단계
-- 첫 단계 사용자 수는 1 이상
-- 이후 사용자 수는 이전 단계보다 증가할 수 없음
-
-오류가 나면 화면의 행·열 메시지를 수정해 다시 업로드한다. 기존에 저장된 유효 퍼널은 새 파일 저장이 성공할 때까지 유지된다.
-
-## Backup and restore
-
-상단 **백업**은 전체 workspace를 `ux-measure-lab-backup.json`으로 저장한다. 다음 시점에는 반드시 백업한다.
-
-- 브라우저 데이터 삭제 전
-- 중요한 Decision 기록 후
-- 다른 장치나 브라우저로 이동하기 전
-- 앱 update 또는 schema 변경 전
-
-**복원**은 현재 workspace를 `ux-measure-lab-before-restore.json`으로 먼저 내려받은 뒤 선택한 JSON으로 전체 상태를 교체한다. import는 schema version과 계산 결과를 재검증한다.
-
-## Corrupted storage recovery
-
-저장 데이터가 잘못된 JSON, 지원하지 않는 version 또는 불가능한 state이면 자동으로 덮어쓰지 않는다.
-
-1. 화면에서 손상 원본을 다운로드한다.
-2. 필요하면 파일을 별도로 보관해 수동 복구 자료로 사용한다.
-3. **빈 워크스페이스로 복구**를 실행한다.
-4. 마지막 정상 JSON backup을 복원한다.
-
-브라우저 개발자 도구에서 storage key를 직접 편집하지 않는다. key는 `ux-measure-lab.workspace.v1`이다.
-
-## Multi-tab conflict
-
-같은 browser profile에서 여러 탭이 workspace를 수정하면 compare-before-write가 오래된 탭의 저장을 거부한다.
-
-1. 각 탭에서 가능한 JSON backup을 받는다.
-2. 보존할 최신 탭을 정한다.
-3. 다른 탭을 닫고 최신 탭을 새로고침한다.
-4. 필요하면 원하는 backup을 복원한다.
-
-현재는 record merge를 자동 수행하지 않는다.
-
-## Product URL analysis failure
-
-- 주소가 공개 HTTP(S)인지 확인한다.
-- 로그인·사내망·localhost·비표준 port는 분석할 수 없다.
-- HTML이 아니거나 512KB를 넘는 페이지, 느린 페이지는 거부된다.
-- 실패해도 Context form을 직접 채워 계속한다.
-
-URL 추출은 페이지의 안전성을 보증하거나 UX 문제를 자동 판정하지 않는다. 표시된 text snapshot을 확인한 뒤 필요한 필드만 적용한다.
-
-## Release checklist
-
-```bash
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npm audit --omit=dev
-git status --short
-```
-
-추가 확인:
-
-- production response의 CSP·COOP·CORP·Permissions-Policy·Referrer-Policy·nosniff·frame headers
-- `.env*`, source와 `.next`에 실제 secret이 없는지
-- 390px와 desktop에서 Context → Decision 핵심 흐름
-- keyboard-only skip link, project dialog, section navigation, form submit, report download
-- README capability와 [Verification](verification.md)의 증거 일치
-
-commit, push, deploy는 각각 명시적으로 범위를 확인한 뒤 수행한다.
+- Supabase migration과 cron은 운영자가 적용해야 한다.
+- Site key 회전, deletion request와 retention alert UI가 없다.
+- PostHog 실계정 endpoint·HogQL schema 검증은 별도 운영 확인이 필요하다.
+- 인증·RLS·public read API가 없다.
+- Session Replay는 구현되지 않았으며 별도 출시 조건을 따른다.
