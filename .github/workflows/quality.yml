@@ -25,6 +25,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm ci --prefix packages/collector
+      - run: npm run test:sdk
       - run: npm run build
       - run: npm audit --omit=dev
 

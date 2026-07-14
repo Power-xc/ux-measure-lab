@@ -16,7 +16,7 @@ export const MAX_PROPS_BYTES = 4_096; // serialized props — event dropped on o
 export type RawEvent = {
   eid: string;
   t: EventType;
-  ts: string;
+  ts: number; // epoch milliseconds — spec.md §4가 wire 타입을 number로 확정
   p: string;
   ref?: string;
   props: Record<string, unknown>;
@@ -53,6 +53,11 @@ function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !Number.isNaN(Date.parse(value));
 }
 
+// 이벤트 ts는 epoch ms(number). envelope의 sent_at(ISO 문자열)과 타입이 다르다.
+function isEpochMs(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -76,7 +81,7 @@ export function validateEvent(raw: unknown): EventValidation {
   if (!isPlainObject(raw)) return { ok: false };
   if (!isBoundedString(raw.eid, MAX_ID_BYTES)) return { ok: false };
   if (typeof raw.t !== "string" || !EVENT_TYPE_SET.has(raw.t)) return { ok: false };
-  if (!isTimestamp(raw.ts)) return { ok: false };
+  if (!isEpochMs(raw.ts)) return { ok: false };
 
   let path = "";
   if (raw.p !== undefined && raw.p !== null) {

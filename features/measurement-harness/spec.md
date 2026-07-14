@@ -42,6 +42,7 @@ UX MeasureLab을 "CSV를 수동 연결하는 evidence-to-decision 워크스페�
 
 - **Wire 이벤트 enum:** `pv | click | rage | dead | scroll | route | s_start | s_end` (SDK 문서 기준). ingest 문서의 `custom`은 v1 제외, `route`·`s_*`는 포함.
 - **배치 envelope:** ingest 문서 형태로 확정 — `{ k, sent_at, sid, aid, events[] }`. SDK 문서의 `vid`는 wire에서 `aid`로 통일한다(의미 동일: pseudonymous 방문자 ID).
+- **타임스탬프 타입:** 이벤트 `ts`는 **epoch milliseconds(number)**, envelope `sent_at`은 ISO-8601 문자열. skew 보정은 두 값과 서버 수신 시각으로 계산한다.
 - **배치 한도:** SDK 기본 flush 20개, ingest 수용 상한 50개 (양립).
 - **세션 규칙:** 30분 무활동 + 24시간 상한, 자정 롤오버 없음, 서버 롤업이 gap 규칙으로 `server_session_id` 재도출 — 세 문서 일치, 그대로 확정.
 
