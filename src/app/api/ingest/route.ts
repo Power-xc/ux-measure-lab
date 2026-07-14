@@ -10,23 +10,33 @@ import { handleOptions } from "../../../features/ingest/server/cors.ts";
 import { InMemoryEventStore } from "../../../features/ingest/server/event-store.ts";
 import { InMemoryDurableRateLimiter } from "../../../features/ingest/server/rate-limit.ts";
 import { InMemorySiteStore } from "../../../features/ingest/server/site-store.ts";
+import { SupabaseEventStore } from "../../../features/ingest/server/backends/supabase-event-store.ts";
+import { SupabaseSiteStore } from "../../../features/ingest/server/backends/supabase-site-store.ts";
+import { UpstashRateLimiter } from "../../../features/ingest/server/backends/upstash-rate-limiter.ts";
+import { jsonResponse } from "../../../shared/server/request-guards.ts";
+import { readServerEnv, type EnvSource } from "../../../shared/server/env.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Integration swap points (Wave 2 wiring, after D-101·D-102·D-104 approval):
-//   siteStore    → Supabase `sites` query (SiteStore)
-//   eventStore   → batched Supabase insert into `events` (EventStore)
-//   rateLimiter  → Upstash Redis limiter (DurableRateLimiter)
-// Until then the endpoint is wired with in-memory placeholders. The site store
-// is empty, so every request fails site-key validation (401) — a safe default:
-// nothing is collected or stored before real provisioning. Secrets are read only
-// from server env at wiring time; none are hardcoded here.
-function defaultIngestDeps(): IngestDeps {
+export function createDefaultIngestDeps(
+  source: EnvSource = process.env,
+  fetcher: typeof fetch = fetch,
+): IngestDeps {
+  const env = readServerEnv(source);
+  const siteStore = env.supabase
+    ? new SupabaseSiteStore(env.supabase, fetcher)
+    : new InMemorySiteStore();
+  const eventStore = env.supabase
+    ? new SupabaseEventStore(env.supabase, fetcher)
+    : new InMemoryEventStore();
+  const rateLimiter = env.upstash
+    ? new UpstashRateLimiter(env.upstash, fetcher)
+    : new InMemoryDurableRateLimiter();
   return {
-    siteStore: new InMemorySiteStore(),
-    eventStore: new InMemoryEventStore(),
-    rateLimiter: new InMemoryDurableRateLimiter(),
+    siteStore,
+    eventStore,
+    rateLimiter,
     now: () => Date.now(),
     limits: DEFAULT_LIMITS,
     skew: DEFAULT_SKEW,
@@ -35,7 +45,18 @@ function defaultIngestDeps(): IngestDeps {
   };
 }
 
-const post = createPostHandler(defaultIngestDeps());
+export function createIngestPost(deps: IngestDeps): (request: Request) => Promise<Response> {
+  const handler = createPostHandler(deps);
+  return async (request: Request): Promise<Response> => {
+    try {
+      return await handler(request);
+    } catch {
+      return jsonResponse({ error: "unavailable" }, { status: 503 });
+    }
+  };
+}
+
+const post = createIngestPost(createDefaultIngestDeps());
 
 export async function POST(request: Request): Promise<Response> {
   return post(request);
