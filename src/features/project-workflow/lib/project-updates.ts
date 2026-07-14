@@ -1,6 +1,6 @@
 import type { Decision } from "../../../entities/decision/model.ts";
 import type { ExperimentPlan, ExperimentResult, GuardrailInput, RateCount } from "../../../entities/experiment/model.ts";
-import type { FunnelImport, Hypothesis, MetricDefinition, Project, ProjectContext } from "../../../entities/project/model.ts";
+import type { Evidence, FunnelImport, Hypothesis, MetricDefinition, Project, ProjectContext } from "../../../entities/project/model.ts";
 
 function sameRateCount(left: RateCount, right: RateCount): boolean {
   return left.converted === right.converted && left.total === right.total;
@@ -86,6 +86,10 @@ function touch(project: Project, now: string, patch: Partial<Project>): Project 
   return { ...project, ...patch, updatedAt: now };
 }
 
+function evidenceKey(evidence: Evidence): string {
+  return evidence.id;
+}
+
 export function applyContext(project: Project, context: ProjectContext, now: string): Project {
   const base = { context, name: context.productName.trim() || project.name };
   if (!contextChanged(project.context, context)) return touch(project, now, base);
@@ -110,6 +114,33 @@ export function applyMetric(project: Project, metric: MetricDefinition, now: str
 export function applyFunnel(project: Project, funnelImport: FunnelImport, now: string): Project {
   if (!funnelChanged(project.funnelImport, funnelImport)) return touch(project, now, { funnelImport });
   return touch(project, now, { funnelImport, evidence: [], frictionCandidate: null, hypothesis: null, experiment: null, experimentResult: null, decision: null });
+}
+
+export function applyHarnessEvidence(project: Project, evidence: readonly Evidence[], now: string): Project {
+  if (!project.funnelImport || project.metric?.status !== "confirmed") {
+    throw new RangeError("확정된 KPI와 퍼널이 있어야 Evidence를 적용할 수 있습니다.");
+  }
+  if (evidence.some((item) => !item.sourceRef || item.sourceRef.sampleSize <= 0)) {
+    throw new RangeError("측정 출처와 실제 표본이 있는 Evidence만 적용할 수 있습니다.");
+  }
+  const retained = project.evidence.filter((item) => item.sourceRef);
+  const existing = new Set(retained.map(evidenceKey));
+  const additions: Evidence[] = [];
+  for (const item of evidence) {
+    const key = evidenceKey(item);
+    if (existing.has(key)) continue;
+    existing.add(key);
+    additions.push(item);
+  }
+  if (additions.length === 0) return project;
+  return touch(project, now, {
+    evidence: [...retained, ...additions],
+    frictionCandidate: null,
+    hypothesis: null,
+    experiment: null,
+    experimentResult: null,
+    decision: null,
+  });
 }
 
 export function applyHypothesis(project: Project, hypothesis: Hypothesis, now: string): Project {

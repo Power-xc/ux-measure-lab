@@ -19,6 +19,7 @@ import {
   applyDecision,
   applyExperiment,
   applyFunnel,
+  applyHarnessEvidence,
   applyHypothesis,
   applyMetric,
   applyResult,
@@ -129,7 +130,20 @@ export function MeasureWorkspace() {
   function saveDiagnosis(evidence: Evidence[], frictionCandidate: FrictionCandidate, hypothesis: Hypothesis): boolean {
     const hasDescendants = activeProject.experiment !== null || activeProject.experimentResult !== null || activeProject.decision !== null;
     if (hasDescendants && !window.confirm("진단 또는 가설 초안을 변경하면 기존 실험 결과와 Decision이 초기화됩니다. 계속할까요?")) return false;
-    return update((current) => ({ ...current, evidence, frictionCandidate, hypothesis, experiment: null, experimentResult: null, decision: null, updatedAt: new Date().toISOString() }));
+    const retained = activeProject.evidence.filter((item) => item.sourceRef && !evidence.some((next) => next.id === item.id));
+    return update((current) => ({ ...current, evidence: [...retained, ...evidence], frictionCandidate, hypothesis, experiment: null, experimentResult: null, decision: null, updatedAt: new Date().toISOString() }));
+  }
+
+  function saveHarnessEvidence(evidence: Evidence[]): boolean {
+    const preview = applyHarnessEvidence(activeProject, evidence, activeProject.updatedAt);
+    if (preview === activeProject) return true;
+    const hasDescendants = activeProject.frictionCandidate !== null
+      || activeProject.hypothesis !== null
+      || activeProject.experiment !== null
+      || activeProject.experimentResult !== null
+      || activeProject.decision !== null;
+    if (hasDescendants && !window.confirm("새 Evidence를 적용하면 기존 진단부터 Decision까지 초기화됩니다. 계속할까요?")) return false;
+    return update((current) => applyHarnessEvidence(current, evidence, new Date().toISOString()));
   }
 
   function saveHypothesis(hypothesis: Hypothesis): boolean {
@@ -179,7 +193,7 @@ export function MeasureWorkspace() {
     context: <ContextPanel key={`${panelKey}:context`} onNext={() => selectSection("metric")} onSave={saveContext} project={activeProject} />,
     metric: <MetricPanel key={`${panelKey}:metric`} contextComplete={progress.sections.context} onBack={() => selectSection("context")} onNext={() => selectSection("funnel")} onSave={saveMetric} project={activeProject} />,
     funnel: <FunnelPanel key={`${panelKey}:funnel`} onBack={() => selectSection("metric")} onNext={() => selectSection("diagnosis")} onSave={saveFunnel} project={activeProject} />,
-    diagnosis: <DiagnosisPanel key={`${panelKey}:diagnosis`} onBack={() => selectSection("funnel")} onNext={() => selectSection("hypothesis")} onSave={saveDiagnosis} project={activeProject} />,
+    diagnosis: <DiagnosisPanel key={`${panelKey}:diagnosis`} onApplyEvidence={saveHarnessEvidence} onBack={() => selectSection("funnel")} onNext={() => selectSection("hypothesis")} onSave={saveDiagnosis} project={activeProject} />,
     hypothesis: <HypothesisPanel key={`${panelKey}:hypothesis`} onBack={() => selectSection("diagnosis")} onNext={() => selectSection("experiment")} onSave={saveHypothesis} project={activeProject} />,
     experiment: <ExperimentPanel key={`${panelKey}:experiment`} onBack={() => selectSection("hypothesis")} onNext={() => selectSection("result")} onSave={saveExperiment} project={activeProject} />,
     result: <ValidationPanel key={`${panelKey}:result`} onBack={() => selectSection("experiment")} onNext={() => selectSection("decision")} onSave={saveResult} project={activeProject} />,

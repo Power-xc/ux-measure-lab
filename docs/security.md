@@ -1,102 +1,124 @@
 # Security
 
-> **대상:** Personal Product v1 · 로컬 개인 사용 기준
+> **대상:** Personal Product · local workspace + optional measurement backends · 2026-07-15
 
-이 문서는 구현된 trust boundary와 남은 위험을 기록한다. 침투 테스트나 규정 준수 인증을 의미하지 않는다.
+이 문서는 구현된 trust boundary와 남은 위험을 기록한다. 침투 테스트, 법률 자문 또는 규정 준수 인증을 의미하지 않는다.
 
-## Data boundary
+## Data separation
 
-- project, CSV에서 정규화한 퍼널, evidence, experiment와 decision은 브라우저 `localStorage`에 저장된다.
-- raw CSV 파일, raw HTML, session replay, credential과 민감한 form payload는 저장하지 않는다.
-- JSON backup은 사용자가 직접 내려받고 복원한다. 파일 자체는 암호화되지 않으므로 안전한 위치에 보관해야 한다.
-- 제품 데이터는 서버 DB로 자동 전송되지 않는다.
-- AI 요청에는 제품 URL, raw HTML, raw CSV, 사용자 식별자와 secret을 넣지 않는다.
+- Project, KPI, Evidence, experiment, verdict와 Decision은 browser `localStorage` schema v2와 사용자 JSON backup에 남는다.
+- 행동 이벤트는 별도 ingest 경로를 통해 선택적 Supabase 증거 계층에 저장된다.
+- 무결성 데이터는 ingest에 보내지 않는다.
+- raw CSV, raw HTML, input value, credential, full referrer URL, raw user agent와 replay는 저장하지 않는다.
+- 행동 스트림은 손실 허용 표본이다. 결과에는 기간·표본·순서형 신뢰 한계를 함께 표시한다.
 
-## Trust boundaries
+## Boundary map
 
-| 입력 | 구현된 방어 | 실패 동작 |
-|---|---|---|
-| Context form | 길이·URL 형식 검증 | 저장 거부, 오류 표시 |
-| Funnel CSV | 1MB, type·header·행·정수·순서 검증 | 기존 유효 상태 유지, 행 오류 표시 |
-| JSON restore | 1MB UI limit, parse·version·전체 schema·cross-record invariant | import 거부 |
-| Product URL | public HTTP(S), credential·port·host·DNS·IP·redirect 검증 | 수동 입력으로 계속 |
-| Remote HTML | status·content type·encoding·512KB·timeout, inert bounded text extraction | snapshot 생성 안 함 |
-| AI request | 32KB, same-origin, runtime schema, evidence 5개 제한 | 400 또는 fallback |
-| AI output | strict JSON schema, unknown field·evidence allowlist·인과 단정 검증 | 출력 폐기, deterministic draft |
-| Browser storage | schema-before-write, compare-before-write, storage event | 경고·재시도·backup 안내 |
+| 경계 | 정상 호출 | 인증·검증 | 실패 동작 |
+|---|---|---|---|
+| Collector → `/api/ingest` | cross-origin | site key hash, per-site Origin allowlist, reflected CORS, bounded body, event schema, site+IP rate | 401/403/429/503 또는 event drop |
+| Workspace → `/api/harness/measure` | same-origin | Origin, `Sec-Fetch-Site`, bounded JSON, exact query keys, adapter capability | 400/404 또는 typed adapter error |
+| Harness → Supabase | server-to-server | service role env, site ID, RPC response validation | `upstream_error`·`invalid_response` |
+| Harness → PostHog | server-to-server, read-only | server API key, allowed cloud host, local quota, response validation | typed error, Project 불변 |
+| Browser → local persistence | local | schema-before-write, invariant, compare-before-write | 경고·재시도·backup |
 
-## URL fetch controls
+수집과 측정 API는 서로 다른 경계다. `/api/ingest`에 workspace의 same-origin guard를 적용하면 정상 수집을 차단한다. `/api/harness/measure`에 cross-origin access를 열면 server connector와 aggregate read 권한이 노출된다.
 
-- `http:`와 `https:`의 기본 포트만 허용한다.
-- URL credential, localhost 계열 host와 private·loopback·link-local·reserved IP range를 차단한다.
-- DNS의 모든 응답이 public인지 확인하고 선택한 resolved IP에 직접 연결한다.
-- HTTPS는 원래 hostname을 TLS SNI로 사용하고 `Host` header를 보존한다.
-- redirect는 최대 3회이며 목적지를 매번 처음부터 재검증한다.
-- 요청당 5초, 전체 10초, HTML 512KB를 넘으면 중단한다.
-- 압축 응답을 요청하지 않으며 HTML/XHTML 이외 content type은 거부한다.
-- script, style, template, noscript, SVG를 제거한 뒤 제한된 text만 반환한다.
-- 추출 결과는 UI에서 **신뢰하지 않은 페이지 텍스트**로 표시하고 사용자가 적용한다.
+## Collector privacy controls
 
-## AI controls
+- `requireConsent: true`가 기본이며 명시적 `granted` 전에는 큐잉과 전송을 모두 막는다.
+- GPC 또는 DNT를 존중하도록 설정된 기본 상태에서는 해당 신호가 수집을 차단한다.
+- input, textarea, select, password, contenteditable, payment autocomplete와 민감한 name을 가진 요소는 설정과 무관하게 수집하지 않는다.
+- click text는 기본 비활성이고, 활성화해도 민감 target에서 반환하지 않는다.
+- query string은 기본 제거하며 email, UUID, 긴 token과 숫자 식별자로 보이는 path segment를 마스킹한다.
+- referrer는 origin으로 축소한다.
+- browser 식별자는 pseudonymous이며 ingest가 `anon_id`를 다시 SHA-256 hash로 저장한다.
 
-- `NODE_ENV=development`, `UX_MEASURE_AI_ENABLED=true`, `OPENAI_API_KEY`를 모두 만족해야 외부 호출한다.
-- `npm run dev`는 `127.0.0.1`에만 bind한다. production runtime과 공개 배포는 항상 fallback이다.
-- key와 model 설정은 server environment에서만 읽는다.
-- `store: false`, tool 없음, strict structured output, 1,200 output token, 10초 timeout, retry 없음.
-- system instruction은 사용자 payload를 데이터로만 취급하고 내부 문자열의 명령을 무시하도록 고정한다.
-- 모델은 기존 evidence ID만 참조할 수 있다. 각 원인 후보는 근거와 불확실성 표현을 가져야 한다.
-- 응답 계약에 KPI 수치, threshold, p-value, verdict와 decision 필드가 없다.
-- 제안은 transient advisory이며 사용자의 명시적 적용 전에는 Project를 수정하지 않는다.
-- 응답 중 project ID나 `updatedAt`이 바뀌면 stale 결과를 폐기한다.
-- provider가 없거나 timeout·HTTP·refusal·JSON·schema 검증이 실패하면 결정적 초안으로 복구한다.
+Host 제품이 동의 UI와 고지, 철회 처리를 책임진다. SDK의 consent gate만으로 조직의 법적 의무가 완료되는 것은 아니다.
+
+## Ingest controls
+
+검증 순서는 content type·크기 → bounded body·압축 해제 → envelope → site → Origin → rate → bot filter → 개별 event → insert다.
+
+- site key는 browser에 노출되는 공개 write key이며 secret으로 취급하지 않는다.
+- database에는 raw key 대신 SHA-256 hash와 관리용 prefix만 저장한다.
+- 허용된 Origin만 그대로 반사하고 `Access-Control-Allow-Origin: *`를 사용하지 않는다.
+- 요청은 압축 64KB, 해제 후 256KB, batch 50개로 제한한다.
+- 유효하지 않은 이벤트는 batch 안에서 드롭하고 나머지는 저장한다.
+- Supabase insert가 실패하면 `503`으로 빠르게 종료한다.
+- Upstash 장애 시 프로세스별 in-memory limiter로 강등해 무제한 fail-open을 피한다.
+- env가 없으면 빈 site store가 모든 수집을 거부한다.
+
+현재 인증·RLS가 없으므로 개인 단일 사이트 범위를 벗어나 운영하지 않는다. 공개 제품으로 전환하기 전에 read authorization, tenant isolation, abuse telemetry와 edge quota가 필요하다.
+
+## Harness controls
+
+- request parser는 capability별 필수 필드와 허용 필드가 정확히 일치해야 통과시킨다.
+- registry는 adapter가 선언한 capability와 query가 맞을 때만 실행한다.
+- same-session cache는 종료된 과거 기간에만 정규화 query의 SHA-256 `queryHash`를 사용한다.
+- server 응답도 client에서 `MeasurementOutcome`과 `NormalizedMeasurement`로 다시 검증한다.
+- `insufficient_sample`은 수치 없는 오류 outcome이며 임의 수치로 대체하지 않는다.
+- ConfidenceBand는 표본 기반 `low | medium | high`다. p-value나 성공 확률이 아니다.
+- 결과 수신만으로 Project를 바꾸지 않고 사용자의 **Evidence로 적용** 동작이 있어야 저장한다.
+- Evidence `sourceRef`는 양의 sample size, adapter, capability, query hash와 confidence를 보존한다.
+
+## Server secrets
+
+다음 값은 server environment에서만 읽는다.
+
+```text
+SUPABASE_SERVICE_ROLE_KEY
+UPSTASH_REDIS_REST_TOKEN
+POSTHOG_API_KEY
+OPENAI_API_KEY
+```
+
+`SUPABASE_URL`, `SUPABASE_SITE_ID`, Upstash URL, PostHog host/project ID도 server backend 선택에 사용한다. 원격 backend URL은 HTTPS만 허용하고 HTTP는 loopback 개발 주소에서만 허용한다. `NEXT_PUBLIC_` prefix를 붙이지 않으며 request body, response, client state와 log에 secret을 넣지 않는다.
+
+Supabase service role은 sites/events/RPC에 강한 권한을 가진다. key가 노출되면 즉시 회전하고, database log와 deployment environment history도 확인한다. PostHog adapter는 read-only personal API key와 필요한 최소 project scope를 사용한다.
+
+## Retention and deletion
+
+이벤트 schema는 90일 기본 보존을 의도한다. `jobs.sql`은 만료 partition drop과 `delete_visitor(site_id, anon_id_hash)`를 정의하지만 자동 실행되지 않는다.
+
+- migration과 cron을 적용하지 않은 환경에는 90일 자동 삭제 보장이 없다.
+- cron은 운영자가 명시적으로 활성화하고 가장 오래된 partition age를 점검해야 한다.
+- 방문자 삭제는 현재 관리 SQL 함수이며 public API나 사용자 UI가 아니다.
+- `retention_days < 90`의 사이트별 세밀한 삭제는 아직 구현되지 않았다.
+- JSON backup과 localStorage 삭제는 사용자가 별도로 관리한다.
+
+## URL and advisory controls
+
+Product URL 분석은 public HTTP(S), credential·port·host·DNS·IP·redirect를 검증하고 선택한 public IP에 연결한다. status, content type, encoding, 512KB와 timeout을 제한한 뒤 active markup을 제거한 text만 반환한다.
+
+선택적 diagnosis provider는 개발 환경의 명시적 opt-in에서만 호출한다. key는 server env에 있고, output은 strict schema와 evidence allowlist를 통과해야 한다. 실패하거나 stale하면 결정적 초안을 사용한다. 수치, threshold, verdict와 Decision은 provider가 정하지 않는다.
 
 ## Web controls
 
-- production CSP는 script·connect·form·frame을 same-origin 중심으로 제한한다.
-- `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `object-src 'none'`을 사용한다.
-- COOP, CORP, `nosniff`, `no-referrer`, 제한된 Permissions Policy를 적용한다.
-- API는 필수 same-origin `Origin`과 `Sec-Fetch-Site`를 확인하고 응답을 `no-store`로 반환한다.
-- request body와 rate-limit key map을 제한한다.
-- UI는 외부 HTML과 AI text를 React text node로 렌더링하며 `dangerouslySetInnerHTML`을 사용하지 않는다.
+- production CSP는 script, connect, form과 frame을 same-origin 중심으로 제한한다.
+- `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `object-src 'none'`, COOP, CORP, `nosniff`와 no-referrer를 사용한다.
+- API JSON 응답은 `Cache-Control: no-store`다.
+- 외부 text는 React text node로 렌더링하고 `dangerouslySetInnerHTML`을 사용하지 않는다.
+- request body와 in-memory rate key map에 상한이 있다.
 
-## OWASP Top 10 mapping
+## Residual risks
 
-| Risk area | 현재 대응 | 남은 위험 |
+| 영역 | 현재 상태 | 남은 위험 |
 |---|---|---|
-| Access control | Personal v1은 인증·공유 API 없음, same-origin POST | multi-user 출시 전 auth·tenant authorization 필요 |
-| Cryptographic failures | secret server env, provider TLS | localStorage·backup은 암호화되지 않음 |
-| Injection | typed parser, inert text, no HTML injection, structured AI output | 새 connector마다 별도 validator 필요 |
-| Insecure design | deterministic metric boundary, human decision, downstream invalidation | history·audit log 없음 |
-| Security misconfiguration | headers, CSP, powered-by 제거, env template | 실제 host의 proxy/header 설정 검증 필요 |
-| Vulnerable components | lockfile, dependency audit gate | 지속적인 dependency update 필요 |
-| Authentication failures | 인증 자체가 범위 밖 | public team product로 그대로 사용 불가 |
-| Integrity failures | JSON schema, forged evaluation 재계산, invariant checks | backup 작성자 서명 없음 |
-| Logging/monitoring | client에 secret 로그 없음 | server audit·abuse telemetry 없음 |
-| SSRF | DNS all-answer 검증, IP pinning, redirect 재검증 | 배포 네트워크 egress policy가 추가 방어로 필요 |
-
-## OWASP LLM risk mapping
-
-| Risk area | 현재 대응 | 남은 위험 |
-|---|---|---|
-| Prompt injection | untrusted payload 경계, no tools·browse·actions, injection fixture | 자연어 필터는 완전한 증명이 아님 |
-| Sensitive disclosure | 최소 필드 전송, URL/raw data/secret 제외, `store:false` | 사용자가 form에 민감정보를 직접 쓰지 않아야 함 |
-| Supply chain | SDK 없이 단일 HTTPS endpoint, lockfile | provider 모델 변경과 운영 정책 모니터링 필요 |
-| Data/model poisoning | 모델 학습·fine-tuning 없음 | external benchmark 도입 시 provenance 필요 |
-| Improper output handling | strict runtime validation, React text rendering | 새 downstream action 추가 시 재설계 필요 |
-| Excessive agency | 도구·자동 action 없음, 명시적 apply | 향후 integration에 최소 권한 필요 |
-| System prompt leakage | 응답 계약에 prompt·secret 없음 | provider 자체 보장은 별도 검토 대상 |
-| Vector/embedding weakness | RAG·vector store 없음 | 해당 기능 도입 전 별도 threat model 필요 |
-| Misinformation | evidence ID, uncertainty, alternative·missing evidence, human review | 모델 제안은 여전히 틀릴 수 있음 |
-| Unbounded consumption | request/output/time/rate limits, explicit opt-in | in-memory rate limit은 distributed quota가 아님 |
+| Access control | 개인 사용, same-origin read route | 인증·RLS·tenant authorization 없음 |
+| Secret management | server env | 운영 host의 env access·회전 절차 검증 필요 |
+| Collector abuse | Origin, public key, dual rate, bot hint | Origin 위조가 가능한 non-browser client와 key abuse |
+| Data minimization | hard input exclusion, path masking | DOM text·custom props를 확장할 때 PII 재평가 필요 |
+| Integrity | strict parser, invariant, deterministic recalculation | backup 서명과 audit log 없음 |
+| Availability | bounded queue/body, 503, local limiter fallback | serverless instance별 fallback은 전역 quota가 아님 |
+| Retention | SQL asset 존재 | migration·cron 미적용 환경은 자동 보존 미보장 |
+| Connector | read-only adapter, strict response | 실제 project 권한과 upstream schema를 운영 전 확인해야 함 |
+| Replay | 미구현 | 구현 전 별도 consent·masking·storage threat model 필요 |
 
 ## Operational rules
 
-- `.env.local`과 실제 key를 commit하지 않는다.
-- 회사 데이터 사용 전 해당 조직의 데이터 처리·AI 전송 정책을 확인한다.
-- live provider 활성화 전 비용 한도, abuse protection과 provider retention 정책을 확인한다.
-- 외부 공개 배포 전 인증 또는 edge rate limit을 추가한다.
-- dependency audit, secret scan, client bundle scan과 production header 확인을 release gate로 반복한다.
-
-## Residual risk
-
-Personal v1은 단일 사용자의 로컬 실험 workspace다. XSS가 가능한 동일 origin 코드나 브라우저 확장은 localStorage를 읽을 수 있고, JSON backup을 받은 사람은 내용을 볼 수 있다. 민감한 원본 데이터 저장소로 사용하지 말고 필요 최소한의 집계값만 입력한다.
+- 실제 `.env.local`과 site key 출력물을 저장소에 넣지 않는다.
+- 회사 데이터를 연결하기 전 해당 조직의 수집, 외부 connector와 보존 정책을 확인한다.
+- Supabase migration과 cron 적용 전 백업·복구 절차를 준비한다.
+- 외부 공개 전 인증, read authorization, edge rate limit과 deletion request workflow를 추가한다.
+- dependency audit, secret scan, client bundle scan, production header와 retention job을 release gate에서 확인한다.

@@ -31,10 +31,11 @@ export function isProjectStateConsistent(project: Project): boolean {
 
   if (project.metric && !contextReady) return false;
   if (project.funnelImport && project.metric?.status !== "confirmed") return false;
+  if (project.evidence.length > 0 && (!project.funnelImport || project.metric?.status !== "confirmed")) return false;
   if (project.frictionCandidate) {
     if (!project.funnelImport || project.metric?.status !== "confirmed" || project.frictionCandidate.relatedEvidenceIds.length === 0) return false;
     if (!hasReferences(project.frictionCandidate.relatedEvidenceIds, availableEvidence)) return false;
-  } else if (project.evidence.length > 0) return false;
+  } else if (project.evidence.some((evidence) => !evidence.sourceRef)) return false;
 
   if (project.hypothesis) {
     if (!project.frictionCandidate || !project.metric || project.hypothesis.primaryMetricId !== project.metric.id || project.hypothesis.evidenceIds.length === 0) return false;

@@ -149,6 +149,26 @@
 .aiSuggestionGrid li + li { margin-top: var(--space-8); }
 .aiSuggestionGrid li span, .aiSuggestionGrid li small { display: block; }
 
+.harnessSection { margin-top: var(--space-24); padding: var(--space-20); border: 1px solid #cbdcff; border-radius: var(--radius-12); background: #f7faff; }
+.harnessSection > header > span { color: #2563ff; font-size: var(--text-label-xsmall); font-weight: var(--font-weight-bold); letter-spacing: 0.1em; }
+.harnessSection > header h3 { margin: var(--space-6) 0; font-size: var(--text-title-medium); }
+.harnessSection > header p { margin: 0; color: #64718a; }
+.harnessSection .form { margin-top: var(--space-16); }
+.harnessParameterBlock { padding: var(--space-16); border: 1px solid #dfe7f3; border-radius: var(--radius-8); background: #f9fbff; }
+.harnessParameterBlock ol { display: flex; flex-wrap: wrap; gap: var(--space-8) var(--space-24); margin: var(--space-10) 0 0; padding-left: var(--space-20); }
+.harnessParameterBlock small, .harnessSection .inlineActions small, .harnessResultCard small { color: #64718a; }
+.harnessSignalGroup { display: flex; flex-wrap: wrap; gap: var(--space-12); margin: 0; padding: var(--space-16); border: 1px solid #dfe7f3; border-radius: var(--radius-8); }
+.harnessSignalGroup legend { padding: 0 var(--space-6); font-weight: var(--font-weight-semibold); }
+.harnessSignalGroup label { display: inline-flex; align-items: center; gap: var(--space-6); }
+.harnessResults { display: grid; gap: var(--space-12); margin-top: var(--space-16); }
+.harnessResultCard, .harnessFailure { padding: var(--space-20); border: 1px solid #dfe7f3; border-radius: var(--radius-12); background: #ffffff; }
+.harnessFailure { margin-top: var(--space-16); border-color: #ead39c; background: #fffaf0; }
+.harnessFailure p { margin: var(--space-6) 0 0; color: #64718a; }
+.harnessValueList { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-8); margin: var(--space-16) 0; }
+.harnessValueList > div { padding: var(--space-10); border-radius: var(--radius-8); background: #f2f6ff; }
+.harnessValueList dt { color: #64718a; font-size: var(--text-caption-medium); }
+.harnessValueList dd { margin: var(--space-4) 0 0; font-size: var(--text-title-small); font-weight: var(--font-weight-bold); }
+
 .resultGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .resultGrid fieldset { min-width: 0; margin: 0; padding: var(--space-16); border: 1px solid #dfe7f3; border-radius: var(--radius-12); }
 .resultGrid legend { padding: 0 var(--space-6); color: #263653; font-weight: var(--font-weight-semibold); }

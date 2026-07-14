@@ -7,12 +7,14 @@ import { requestDiagnosisSuggestion } from "../../../features/ai-diagnosis/model
 import { buildDiagnosisFromFunnel } from "../../../features/diagnosis/lib/build-diagnosis";
 import { analyzeFunnel } from "../../../features/measure-loop/lib/calculate-funnel";
 import { AiSuggestionCard } from "./AiSuggestionCard";
+import { HarnessEvidenceSection } from "./HarnessEvidenceSection";
 import { LockedPanel, PanelHeader } from "./PanelPrimitives";
 import styles from "./panels.module.css";
 
 type DiagnosisPanelProps = {
   project: Project;
   onSave(evidence: Evidence[], friction: FrictionCandidate, hypothesis: Hypothesis): boolean;
+  onApplyEvidence(evidence: Evidence[]): boolean;
   onBack(): void;
   onNext(): void;
 };
@@ -32,6 +34,7 @@ export function DiagnosisPanel(props: DiagnosisPanelProps) {
     return (
       <section className={styles.panel}>
         <PanelHeader kicker="04 · DIAGNOSE" title="관찰 가능한 이탈이 없습니다" description="모든 단계의 사용자 수가 같아 현재 데이터만으로는 마찰 후보를 만들 수 없습니다." status="No drop-off" />
+        <HarnessEvidenceSection onApplyEvidence={props.onApplyEvidence} project={props.project} />
         <div className={styles.emptyBlock}><strong>다른 데이터 범위를 확인하세요</strong><p>이 결과도 유효한 관찰입니다. 원인을 만들어내지 않고 기간이나 퍼널 범위를 바꿔 다시 측정하세요.</p></div>
         <div className={styles.formActions}><button className={styles.secondaryButton} onClick={props.onBack} type="button">← Measure</button></div>
       </section>
@@ -47,7 +50,13 @@ export function DiagnosisPanel(props: DiagnosisPanelProps) {
       sourceName: props.project.funnelImport?.fileName ?? "",
       observedAt: new Date().toISOString(),
     });
-    props.onSave(draft.evidence, draft.frictionCandidate, draft.hypothesis);
+    const evidence = [...props.project.evidence.filter((item) => item.sourceRef), ...draft.evidence];
+    const evidenceIds = evidence.map((item) => item.id);
+    props.onSave(
+      evidence,
+      { ...draft.frictionCandidate, relatedEvidenceIds: evidenceIds },
+      { ...draft.hypothesis, evidenceIds },
+    );
   }
 
   async function requestAiSuggestion() {
@@ -121,6 +130,7 @@ export function DiagnosisPanel(props: DiagnosisPanelProps) {
         <article className={styles.diagnosisKpiCard} data-tone="critical"><span>가장 큰 이탈</span><strong>{analysis.largestDropOff.dropOffFromPrevious}%</strong><small>{largestDropPrevious?.label ?? "이전 단계"} → {analysis.largestDropOff.label} · {analysis.largestDropOff.dropOffUsers?.toLocaleString("ko-KR")}명</small></article>
         <article className={styles.diagnosisKpiCard}><span>분석 표본</span><strong>{entryUsers.toLocaleString("ko-KR")}</strong><small>{analysis.steps.length}개 단계 · {props.project.funnelImport.fileName}</small></article>
       </div>
+      <HarnessEvidenceSection onApplyEvidence={props.onApplyEvidence} project={props.project} />
       <div className={styles.diagnosisWorkspace}>
         <article className={styles.diagnosisFunnelCard}>
           <div className={styles.cardHeader}><div><span>OBSERVED DATA</span><h3>Funnel performance</h3></div><small>이전 단계 대비</small></div>
