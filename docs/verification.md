@@ -18,7 +18,7 @@
 | Secret/code scan | PASS | pre-commit secret-scan 게이트 + source에 explicit `any`, `@ts-ignore`, HTML injection, console, TODO 없음 |
 | File size | PASS | 모든 source/test/style 300줄 이하 |
 
-공개 배포는 의도적으로 내려간 상태다(개발 완료 릴리스에서 재공개). 아래 Deployment evidence는 마지막 공개 빌드 기준의 기록이며 재공개 시 재검증한다.
+공개 배포는 서버 수집 env 없이 동작하는 데모 빌드다. 시크릿을 배포 환경에 두지 않으며, ingest·어댑터 측정은 안전기본값(수집 0·not_configured)으로 폴백함을 프로덕션에서 확인했다.
 
 ## Test inventory
 
@@ -55,10 +55,19 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 
 | ID | Result | Observation |
 |---|---|---|
-| DEPLOY-001 | PASS | public home `200`, `UX MeasureLab` server output과 필수 보안 header 확인 |
-| DEPLOY-002 | PASS | public `/api/product-context`가 `https://example.com` 분석 요청에 `200` 반환 |
-| DEPLOY-003 | PASS | Origin 없는 public API 요청 `403` |
-| DEPLOY-004 | PASS | public `/api/ai/diagnosis`가 `deterministic/not_configured`를 반환하고 provider를 호출하지 않음 |
+| DEPLOY-001 | PASS | demo home `200`, CSP·`X-Frame-Options: DENY` 등 보안 header 확인 (2026-07-15 재배포) |
+| DEPLOY-002 | PASS | Origin 없는 `/api/harness/measure` 요청 `403` — same-origin 경계가 프로덕션에서 동작 |
+| DEPLOY-003 | PASS | 배포 환경에 서버 시크릿 없음 — ingest·측정은 안전기본값 폴백 (데모 정책) |
+| DEPLOY-004 | PASS | `/api/ai/diagnosis`는 production에서 항상 deterministic fallback |
+
+## Local live-collection evidence (2026-07-15)
+
+| ID | Result | Observation |
+|---|---|---|
+| LIVE-001 | PASS | Supabase·Upstash·PostHog 연결 검증 — 마이그레이션 2종 실행, `PING`, Query API `200` |
+| LIVE-002 | PASS | 사이트 프로비저닝 후 SDK wire 배치 5건이 `/api/ingest`에서 `202 {accepted:5}` |
+| LIVE-003 | PASS | Supabase `events`에 5행 실재, `funnel_counts` RPC가 단계별 사용자 수를 실계산 |
+| LIVE-004 | PASS | `/api/harness/measure` first-party 측정이 표본 1명에 수치를 만들지 않고 `insufficient_sample` 반환 — HAC-11이 실데이터에서 동작 |
 
 ## Acceptance criteria matrix
 
