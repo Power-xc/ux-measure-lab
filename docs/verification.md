@@ -1,6 +1,6 @@
 # Verification
 
-> **검증일:** 2026-07-15 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `050e3af`
+> **검증일:** 2026-07-16 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `0650f0f`
 
 ## Release gate
 
@@ -8,7 +8,7 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests (root) | PASS | `npm test` · 165/165 |
+| Unit tests (root) | PASS | `npm test` · 182/182 |
 | Unit tests (SDK) | PASS | `npm run test:sdk` · 69/69 (packages/collector, jsdom) |
 | Playwright E2E | PASS | `npm run test:e2e` · 8/8 chromium · production build를 loopback에서 기동해 검증 |
 | Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/product-context`·`/api/ingest`·`/api/harness/measure` |
@@ -31,6 +31,7 @@
 | Workflow | FLOW-001~002 | AI 없는 8단계 golden loop, downstream invalidation, preregistration gate, escaped report |
 | Product URL | URL-001~010 | private/reserved target, mixed DNS, redirect, inert extraction, byte/type, Origin, abort |
 | AI contract | AI-001~010 | evidence allowlist, injection, unknown field, obfuscated numeric·decision language, timeout, production provider gate, route |
+| Experiment fleet | FLEET-PLAN-001~006 · FLEET-WAVE-001~006 · FLEET-NEXT-001~005 | 사전 등록 거부 규칙(중복 변형·역전 threshold·부족 예산), 변형별 판정의 `evaluateExperiment` 동일성, guardrail 우선 컷, 원시 delta 순위와 결정적 tie-break, 예산 산술(음수 노출), 수렴·소진·전멸 중단 |
 | Harness 계약 | contract·invariants·updates | unknown field·수치 위조 거부, sourceRef invariant, v1→v2 무손실 마이그레이션·백업, harness evidence 적용 규칙 |
 | Harness 측정 | catalog·measure-service·registry·route | 스킬-capability 매핑, 결정적 파생 계산 재사용, insufficient_sample, queryHash 재현성, same-origin 거부, 어댑터 디스패치 |
 | PostHog 어댑터 | query·adapter·http-client | fixture 정규화가 계약 검증 통과, 오류 매핑(401·429·5xx), token-bucket 산술, 교차 어댑터 스키마 동형(HAC-09) |
