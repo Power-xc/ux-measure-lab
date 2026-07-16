@@ -1,7 +1,7 @@
 # Experiment Fleet — Spec
 
 > **작성일:** 2026-07-16 · **작성자:** Power-xc
-> **상태:** Wave 0 구현 완료 · Wave 1+ 사용자 검토 대기
+> **상태:** Wave 0·1 구현 완료 · Wave 2+ 사용자 검토 대기
 > **입력:** [research.md](research.md) · [ADR-0002](../../docs/adrs/0002-experiment-fleet.md)
 
 ## 1. 정의
@@ -30,9 +30,9 @@
 
 | Wave | 내용 | 산출 | 상태 |
 |---|---|---|---|
-| 0 | 결정적 함대 엔진 — 사전 등록 검증·웨이브 판정·다음 웨이브 배분 | `src/entities/fleet/` + `src/features/experiment-fleet/lib/` + 단위 테스트 17종 | **구현** |
-| 1 | 워크스페이스 통합 — Project 스키마 확장(선택적 `fleetPlan`), 함대 패널 UI, 리포트 확장 | 스키마 v3 마이그레이션 + widgets 패널 | 검토 대기 |
-| 2 | harness 연동 — `fleet` 측정 스킬 활성화: funnel×segments capability로 변형별 관찰 자동 수집 | 어댑터 쿼리 + 스킬 available 전환 | 검토 대기 |
+| 0 | 결정적 함대 엔진 — 사전 등록 검증·웨이브 판정·다음 웨이브 배분 | `src/entities/fleet/` + `src/features/experiment-fleet/lib/` + 단위 테스트 | **구현** |
+| 1 | 워크스페이스 통합 — 스키마 v3(선택적 `fleet`), 실험 단계 내 함대 섹션 UI, 리포트 확장, 노출 불균형 경고 | v2→v3 무손실 마이그레이션 + 재계산 검증 + widgets + E2E | **구현** |
+| 2 | harness 연동 — `fleet` 측정 스킬 활성화: funnel×segments capability로 변형별 관찰 자동 수집. 영구 holdout·승격 확정 웨이브 설계 포함 | 어댑터 쿼리 + 스킬 available 전환 | 검토 대기 |
 | 3 | AI 변형 후보 생성 — 기존 AI trust boundary 안에서 evidence 참조 변형 후보 제안 | 후보 생성 route + 검증 | 검토 대기 |
 
 제외(불변): 밴딧 자동 배분, AI 승자 선언, 실시간 트래픽 스플리터, feature flag 엔진, 통계적 유의성 판정.
@@ -45,6 +45,8 @@
 - **컷 우선순위** — guardrail 위반 → 컷, 표본·기간 미달 → 재수집(needs_sample), not_supported → 컷, 나머지가 순위 대상. keepShare로 상위 ceil(keepShare×N)만 승급하되 최소 1개는 남긴다.
 - **예산 산술** — `사용 표본 = 기준선 total + Σ 변형 total`. 다음 웨이브 목표 표본 = `floor(남은 예산 / (활성 변형 + 1))`, 변형별 최소 표본 미달이면 소진 선언.
 - **수렴 규칙** — 승급 1개 + 재수집 0개 = 수렴(사람 결정 단계로). 재수집만 1개 남으면 수렴이 아니라 계속 수집.
+- **노출 불균형 신호** — 변형 표본이 웨이브 중앙값의 절반 미만이거나 2배를 초과하면 `exposureWarnings`에 표시한다. SRM 통계 검정의 결정적 대체이며 판정·순위는 바꾸지 않는다(OSS 조사 §6).
+- **저장 무결성** — 함대 상태는 웨이브 입력과 함께 저장되고, 백업 복원 시 판정을 재계산해 저장값과 대조한다. 위조된 판정은 스키마 경계에서 거부된다.
 
 ## 5. Acceptance Criteria
 
@@ -58,6 +60,10 @@
 | FAC-06 | 수렴·예산 소진·전멸 시 진행을 멈추고 사유를 반환한다 | FLEET-NEXT-002~004 |
 | FAC-07 | 사전 등록 검증을 통과하지 못한 함대는 어떤 판정도 실행할 수 없다 | FLEET-PLAN-001~006 · FLEET-WAVE-005 |
 | FAC-08 | 기존 단위 테스트·E2E·품질 게이트가 계속 통과한다 | 전체 게이트 |
+| FAC-09 | 노출 불균형은 판정을 바꾸지 않고 경고로만 표시된다 | FLEET-WAVE-007 |
+| FAC-10 | v1·v2 workspace는 무손실로 v3로 승격되고 승격 전 원본이 백업된다 | HAC-01 · STORAGE-010 |
+| FAC-11 | 백업 JSON의 위조된 함대 판정은 재계산 대조로 거부된다 | FLEET-SCHEMA-001~004 |
+| FAC-12 | 함대 UI에서 사전 등록 → 웨이브 판정 → 이력 복구가 동작한다 | e2e/fleet.spec.ts |
 
 ## 6. 사용자 결정 필요 (Wave 1 전)
 

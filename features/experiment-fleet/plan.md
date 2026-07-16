@@ -1,7 +1,7 @@
 # Experiment Fleet — 실행 계획
 
 > **작성일:** 2026-07-16
-> **상태:** Wave 0 구현 완료 · Wave 1+ 사용자 검토 대기
+> **상태:** Wave 0·1 구현 완료 · Wave 2+ 사용자 검토 대기
 > **전제:** [spec.md](spec.md)의 불변 조건·계약 결정·AC를 따른다.
 
 ## Wave 0 — 결정적 함대 엔진 (완료)
@@ -29,20 +29,38 @@ package.json                                                 테스트 3종 연�
 
 검증: typecheck·lint·`npm test` 182/182·build green.
 
-## Wave 1 — 워크스페이스 통합 (검토 대기)
+## Wave 1 — 워크스페이스 통합 (완료)
 
-영향 파일(예정): `src/shared/lib/project-schema.ts`(v3, 선택적 `fleetPlan`), `src/shared/lib/project-repository.ts`(v2→v3 마이그레이션 + 백업), `src/widgets/measure-workspace/panels/`(함대 패널), `src/features/report/`.
+영향 파일:
 
-- [ ] 스키마 v3: additive `fleetPlan`, v2 데이터 무손실 로드, 마이그레이션 전 자동 백업.
-- [ ] 함대 패널: 사전 등록 → 웨이브 관찰 입력 → 판정 결과 → 사람의 결정. "동시 판정 N건" 다중 비교 한계 병기.
-- [ ] 리포트: 함대 요약(웨이브·컷·승급 이력)을 Markdown 리포트에 추가.
-- [ ] E2E: 함대 golden loop 1종.
+```text
+src/entities/project/model.ts                     schemaVersion 3 + 선택적 fleet 필드
+src/entities/fleet/model.ts                       FleetWaveRecord·FleetState + exposureWarnings
+src/shared/lib/project-repository.ts              v1·v2→v3 승격 + 승격 전 백업
+src/shared/lib/fleet-schema.ts                    백업 경계 검증: 구조 + 판정 재계산 대조
+src/shared/lib/project-invariants.ts              함대 도메인 규칙(KPI·가설 게이트, 웨이브 연쇄)
+src/features/project-workflow/lib/project-updates.ts   applyFleetPlan·applyFleetWave
+src/widgets/measure-workspace/panels/FleetSection.tsx  실험 단계 내 함대 섹션 (8단계 루프 불변)
+src/widgets/measure-workspace/panels/FleetWaveForm.tsx 웨이브 관찰 입력
+src/features/report/lib/build-experiment-report.ts     함대 요약 섹션
+e2e/fleet.spec.ts                                 함대 golden loop
+```
+
+- [x] 스키마 v3: additive `fleet`, v1·v2 데이터 무손실 로드, 마이그레이션 전 자동 백업 (STORAGE-010·HAC-01).
+- [x] 백업 복원 시 함대 판정을 재계산해 위조 거부 (FLEET-SCHEMA-001~004).
+- [x] 함대 섹션: 사전 등록 → 웨이브 관찰 입력 → 판정 결과, "동시 판정 N건" 다중 비교 한계 병기. 8단계 루프는 변경하지 않고 실험 단계 안의 선택 섹션으로 통합.
+- [x] OSS 관행 반영: 노출 불균형 경고(결정적 규칙, FLEET-WAVE-007) — research.md §6.
+- [x] 리포트: 함대 요약(정책·웨이브·승격 후보) 추가 (FLOW-001 확장).
+- [x] E2E: 함대 golden loop — 사전 등록·웨이브 판정·수렴·새로고침 복구.
+
+검증: typecheck·lint·`npm test` 191/191·build·E2E 9/9 green.
 
 ## Wave 2 — harness 연동 (검토 대기)
 
 - [ ] `MeasurementQuery`에 함대 관찰 쿼리(변형 dimension) 추가 또는 segments 쿼리 재사용 결정.
 - [ ] first-party 어댑터에서 변형별 RateCount 집계 → `FleetVariantObservation` 정규화.
 - [ ] `fleet` 스킬 `available: true` 전환 + 계약 테스트.
+- [ ] 영구 holdout과 승격 후보 확정 웨이브(신규 표본) 설계 — 승자의 저주 완화 (research.md §6).
 
 ## Wave 3 — AI 변형 후보 생성 (검토 대기)
 

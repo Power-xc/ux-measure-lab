@@ -1,6 +1,6 @@
 # Verification
 
-> **검증일:** 2026-07-16 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `0650f0f`
+> **검증일:** 2026-07-16 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `ab55aeb`
 
 ## Release gate
 
@@ -8,9 +8,9 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests (root) | PASS | `npm test` · 182/182 |
+| Unit tests (root) | PASS | `npm test` · 191/191 |
 | Unit tests (SDK) | PASS | `npm run test:sdk` · 69/69 (packages/collector, jsdom) |
-| Playwright E2E | PASS | `npm run test:e2e` · 8/8 chromium · production build를 loopback에서 기동해 검증 |
+| Playwright E2E | PASS | `npm run test:e2e` · 9/9 chromium · production build를 loopback에서 기동해 검증 |
 | Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/product-context`·`/api/ingest`·`/api/harness/measure` |
 | GitHub CI | PASS | `main`의 verify(typecheck·lint·test·sdk·build·audit) + e2e job green |
 | Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability · 런타임 의존성은 Next/React뿐(Supabase·Upstash·PostHog 전부 fetch 직호출) |
@@ -31,7 +31,8 @@
 | Workflow | FLOW-001~002 | AI 없는 8단계 golden loop, downstream invalidation, preregistration gate, escaped report |
 | Product URL | URL-001~010 | private/reserved target, mixed DNS, redirect, inert extraction, byte/type, Origin, abort |
 | AI contract | AI-001~010 | evidence allowlist, injection, unknown field, obfuscated numeric·decision language, timeout, production provider gate, route |
-| Experiment fleet | FLEET-PLAN-001~006 · FLEET-WAVE-001~006 · FLEET-NEXT-001~005 | 사전 등록 거부 규칙(중복 변형·역전 threshold·부족 예산), 변형별 판정의 `evaluateExperiment` 동일성, guardrail 우선 컷, 원시 delta 순위와 결정적 tie-break, 예산 산술(음수 노출), 수렴·소진·전멸 중단 |
+| Experiment fleet | FLEET-PLAN-001~006 · FLEET-WAVE-001~007 · FLEET-NEXT-001~005 | 사전 등록 거부 규칙(중복 변형·역전 threshold·부족 예산), 변형별 판정의 `evaluateExperiment` 동일성, guardrail 우선 컷, 원시 delta 순위와 결정적 tie-break, 예산 산술(음수 노출), 수렴·소진·전멸 중단, 노출 불균형 경고의 판정 불간섭 |
+| Fleet 저장 | FLEET-SCHEMA-001~004 · FLEET-UPDATE-001~003 · STORAGE-010 | 백업 복원 시 판정 재계산 대조(수치·순위·승격 위조 거부), v1·v2→v3 무손실 승격과 승격 전 백업, 사전 등록 변경 시 웨이브 초기화, 웨이브 번호·표본 연쇄 강제 |
 | Harness 계약 | contract·invariants·updates | unknown field·수치 위조 거부, sourceRef invariant, v1→v2 무손실 마이그레이션·백업, harness evidence 적용 규칙 |
 | Harness 측정 | catalog·measure-service·registry·route | 스킬-capability 매핑, 결정적 파생 계산 재사용, insufficient_sample, queryHash 재현성, same-origin 거부, 어댑터 디스패치 |
 | PostHog 어댑터 | query·adapter·http-client | fixture 정규화가 계약 검증 통과, 오류 매핑(401·429·5xx), token-bucket 산술, 교차 어댑터 스키마 동형(HAC-09) |
@@ -51,6 +52,7 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 | BROWSER-005 | PASS · 수동 | 앱 source console error 없음. 설치된 확장의 Google Fonts 주입은 production CSP가 차단함을 확인 |
 | BROWSER-006 | PASS · 자동화 | `e2e/harness.spec.ts` — 빈 aggregate에서 측정 실행 시 수치 없이 `insufficient_sample` 카드 표시 (HAC-11의 UI 계약) |
 | BROWSER-007 | PASS · 자동화 | `e2e/harness.spec.ts` — mock 응답으로 측정 성공 시 draft 유지·세션 캐시 재사용·명시적 적용 후에만 저장 (HAC-08·HAC-10) |
+| BROWSER-008 | PASS · 자동화 | `e2e/fleet.spec.ts` — 함대 사전 등록 → 웨이브 판정(승급·컷·승격 후보·다중 비교 병기) → 수렴 중단 → 새로고침 후 이력 복구 (FAC-12) |
 
 ## Deployment evidence
 

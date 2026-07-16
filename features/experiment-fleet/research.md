@@ -73,6 +73,21 @@ LLM이 변형 생성 비용을 0에 수렴시켰다. 수백 개의 카피·이�
 
 ### 미해결 (후속 리서치)
 
-- 다중 비교 위험을 practical threshold 체계 안에서 어떻게 표시할지 (FDR을 계산하지 않으면서 "N개 중 K개가 기준을 넘음"의 한계를 정직하게 병기하는 방법).
-- holdout 변형의 사전 등록 지원 여부.
+- 다중 비교 위험을 practical threshold 체계 안에서 어떻게 표시할지 (FDR을 계산하지 않으면서 "N개 중 K개가 기준을 넘음"의 한계를 정직하게 병기하는 방법). → Wave 1에서 "동시 판정 N건" 문구 병기로 1차 반영.
+- holdout 변형의 사전 등록 지원 여부. → 아래 OSS 조사 후 Wave 2 후보로 확정.
 - novelty 감쇠를 웨이브 기간 규칙으로 흡수할 수 있는지.
+
+## 6. OSS 관행 조사 (2026-07-16 추가)
+
+Wave 1 구현 전, 고스타 오픈소스·상용 실험 도구의 공식 문서에서 결정적(비 p-value) 관행을 조사했다.
+
+| 관행 | 출처 | 본 제품 반영 |
+|---|---|---|
+| 변형별 최소 노출 게이트 (PostHog: 변형당 50 노출 미만이면 결과 미표시) | [PostHog docs](https://posthog.com/docs/experiments/common-questions) | **기구현** — `minimumSampleSizePerVariant` 미달은 판정 대신 재수집 |
+| guardrail 고정 마진 컷 (Eppo·Spotify Confidence: non-inferiority margin 위반 시 자동 중단) | [Eppo](https://www.geteppo.com/blog/what-are-guardrail-metrics-with-examples) · [Confidence](https://confidence.spotify.com/blog/better-decisions-with-guardrails) | **기구현** — `maxGuardrailIncreasePp` 위반은 순위 무관 컷 |
+| 웨이브 단위 결정적 컷 (Meta Ax: successive halving) | [ax.dev](https://ax.dev) | **기구현** — keepShare 순위 컷 |
+| SRM/배분 이상 감지 (GrowthBook: 관찰 배분이 기대 배분에서 벗어나면 경고) | [GrowthBook docs](https://docs.growthbook.io/app/experiment-results) | **채택·변형** — chi-squared 대신 결정적 규칙: 변형 표본이 웨이브 중앙값의 절반 미만·2배 초과면 `exposureWarnings`로 표시. 판정은 바꾸지 않는다 |
+| 영구 holdout (GrowthBook: 5%를 모든 변경에서 제외해 누적 효과 측정, PostHog: 승자 롤아웃 후에도 holdout 유지) | [GrowthBook holdouts](https://docs.growthbook.io/app/holdouts) · [PostHog holdouts](https://posthog.com/docs/experiments/holdouts) | **로드맵(Wave 2)** — 승격 후보 확정 웨이브(신규 표본)와 함께 설계 |
+| 변형 수 상한 (PostHog: control + 9 test 하드 리밋) | [PostHog docs](https://posthog.com/docs/experiments/common-questions) | **기구현·완화** — `maxActiveVariants`는 동시 실행만 제한, 등록 자체는 예산 검증이 제약 |
+
+조사의 함의: 본 엔진의 컷·게이트 설계는 업계 관행과 정합하며, SRM만 통계 검정 대신 결정적 근사로 채택했다(레포의 no-p-value 원칙 유지). chi-squared SRM이 필요해지면 "데이터 무결성 검사는 효과 판정이 아니다"라는 별도 논거로 재검토한다.
