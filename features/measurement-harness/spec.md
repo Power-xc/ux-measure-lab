@@ -4,7 +4,7 @@
 > **상태:** 사용자 검토 대기 · 구현 전
 > **입력:** [research-sdk.md](research-sdk.md) · [research-ingest.md](research-ingest.md) · [research-harness.md](research-harness.md)
 
-## 1. 정의
+## 1. 정의 — 왜 만드는가
 
 UX MeasureLab을 "CSV를 수동 연결하는 evidence-to-decision 워크스페이스"에서 "질문을 입력하면 필요한 측정이 자동 구성되는 measurement harness"로 확장한다.
 

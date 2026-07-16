@@ -44,6 +44,7 @@ Personal API key는 연결할 project의 read 범위만 허용한다. 실제 Que
 
 1. `supabase/migrations/0001_ingest.sql`: sites, partitioned events, sessions.
 2. `supabase/migrations/0002_aggregates.sql`: service-role aggregate RPC.
+3. `supabase/migrations/0003_segmented_funnel.sql`: 변형별 퍼널 RPC (experiment fleet).
 3. `supabase/jobs.sql`: partition, retention, session rollup, visitor deletion 함수.
 4. `jobs.sql` 하단의 cron 등록문을 운영 환경에 맞게 검토한 뒤 활성화한다.
 
@@ -132,7 +133,7 @@ Supabase env가 없거나 선택 기간에 표본이 없거나 시작·종료 �
 First-party RPC 실패 시 다음을 확인한다.
 
 - `SUPABASE_SITE_ID`가 실제 site UUID인지
-- `0002_aggregates.sql`이 적용됐는지
+- `0002_aggregates.sql`·`0003_segmented_funnel.sql`이 적용됐는지
 - service role에 RPC execute 권한이 있는지
 - 요청 window가 event `ts` 범위와 겹치는지
 - funnel step이 event type 또는 normalized path와 일치하는지
@@ -166,7 +167,7 @@ select delete_visitor('site-uuid'::uuid, 'sha256-anon-id');
 
 Workspace 상단 **백업**은 schema v2 전체 상태를 JSON으로 저장한다. 브라우저 데이터 삭제, 중요한 Decision, schema 변경 전 백업한다.
 
-복원은 현재 workspace를 먼저 다운로드한 뒤 선택한 JSON으로 전체 상태를 교체한다. Import는 version, record schema, 계산 결과와 cross-record invariant를 재검증한다. v1 workspace를 읽을 때는 원본을 migration backup slot에 보존한 뒤 v2로 승격한다.
+복원은 현재 workspace를 먼저 다운로드한 뒤 선택한 JSON으로 전체 상태를 교체한다. Import는 version, record schema, 계산 결과와 cross-record invariant를 재검증한다. v1·v2 workspace를 읽을 때는 원본을 migration backup slot에 보존한 뒤 v3로 승격한다.
 
 손상된 storage는 자동 덮어쓰지 않는다. 원본을 내려받고 빈 workspace로 복구한 뒤 마지막 정상 backup을 복원한다. storage key 이름은 `ux-measure-lab.workspace.v1`이지만 payload version은 2다.
 

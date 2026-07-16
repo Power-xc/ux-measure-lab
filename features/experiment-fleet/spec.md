@@ -1,10 +1,10 @@
 # Experiment Fleet — Spec
 
 > **작성일:** 2026-07-16 · **작성자:** Power-xc
-> **상태:** Wave 0·1 구현 완료 · Wave 2+ 사용자 검토 대기
+> **상태:** Wave 0·1·2 구현 완료 · Wave 3 사용자 검토 대기
 > **입력:** [research.md](research.md) · [ADR-0002](../../docs/adrs/0002-experiment-fleet.md)
 
-## 1. 정의
+## 1. 정의 — 왜 만드는가
 
 실험의 단위를 "가설 1개 → A/B 실험 1개"에서 "가설 공간 1개 → 사전 등록된 변형 함대"로 확장한다. AI가 변형 후보를 대량 생성하는 시대에 사람의 역할은 변형을 고르는 것에서 **정책(threshold·표본 예산·guardrail·종료 규칙)을 설계하고 최종 결정을 기록하는 것**으로 이동한다. 함대의 컷·승급·수렴은 전부 결정적 TypeScript 코드가 계산한다.
 
@@ -32,8 +32,8 @@
 |---|---|---|---|
 | 0 | 결정적 함대 엔진 — 사전 등록 검증·웨이브 판정·다음 웨이브 배분 | `src/entities/fleet/` + `src/features/experiment-fleet/lib/` + 단위 테스트 | **구현** |
 | 1 | 워크스페이스 통합 — 스키마 v3(선택적 `fleet`), 실험 단계 내 함대 섹션 UI, 리포트 확장, 노출 불균형 경고 | v2→v3 무손실 마이그레이션 + 재계산 검증 + widgets + E2E | **구현** |
-| 2 | harness 연동 — `fleet` 측정 스킬 활성화: funnel×segments capability로 변형별 관찰 자동 수집. 영구 holdout·승격 확정 웨이브 설계 포함 | 어댑터 쿼리 + 스킬 available 전환 | 검토 대기 |
-| 3 | AI 변형 후보 생성 — 기존 AI trust boundary 안에서 evidence 참조 변형 후보 제안 | 후보 생성 route + 검증 | 검토 대기 |
+| 2 | harness 연동 — `fleet` 측정 스킬 활성화: segments capability로 변형별 관찰 자동 수집과 웨이브 프리필. holdout·승격 확정 웨이브는 설계 확정(§8) | segments 측정 경로 + RPC + 스킬 available 전환 + 프리필 | **구현** |
+| 3 | AI 변형 후보 생성과 holdout·확정 웨이브 구현 — 기존 AI trust boundary 안에서 evidence 참조 변형 후보 제안 | 후보 생성 route + 검증 + §8 구현 | 검토 대기 |
 
 제외(불변): 밴딧 자동 배분, AI 승자 선언, 실시간 트래픽 스플리터, feature flag 엔진, 통계적 유의성 판정.
 
@@ -64,6 +64,8 @@
 | FAC-10 | v1·v2 workspace는 무손실로 v3로 승격되고 승격 전 원본이 백업된다 | HAC-01 · STORAGE-010 |
 | FAC-11 | 백업 JSON의 위조된 함대 판정은 재계산 대조로 거부된다 | FLEET-SCHEMA-001~004 |
 | FAC-12 | 함대 UI에서 사전 등록 → 웨이브 판정 → 이력 복구가 동작한다 | e2e/fleet.spec.ts |
+| FAC-13 | 변형별 측정은 표본 미달 변형을 결손으로 알리고 수치를 만들지 않는다 | measure-service segments 테스트 |
+| FAC-14 | 웨이브 프리필은 측정에 없는 변형·기준선을 실패로 알리고 값을 위조하지 않는다 | FLEET-PREFILL-001~003 |
 
 ## 6. 사용자 결정 필요 (Wave 1 전)
 
@@ -79,3 +81,11 @@
 - **승자의 저주** — 웨이브 순위와 최종 승격을 같은 표본으로 판단하면 효과가 과대 추정된다. 승격 후보의 최종 확인 웨이브(신규 표본)를 stopRule 권장 패턴으로 문서화한다.
 - **novelty effect** — 웨이브 기간(plannedDaysPerWave)이 짧으면 새로움 효과가 순위를 왜곡한다. 기본값 가이드로 완화한다.
 - **예산 파편화** — maxActiveVariants와 예산 검증이 방어하지만, 사용자가 과도한 변형 수를 등록하는 것 자체는 막지 않는다(사전 등록 검증이 첫 웨이브 최소 예산을 강제).
+
+## 8. Holdout·승격 확정 웨이브 설계 (Wave 3 구현 전제)
+
+OSS 조사(research.md §6)에서 확정한 설계로, 구현은 Wave 3에서 한다.
+
+- **영구 holdout** — `FleetPolicy`에 `holdoutShare`(권장 기본 0.05)를 가산한다. holdout 사용자는 어떤 변형에도 배정되지 않고 기존 경험을 유지하며, 함대가 수렴한 뒤에도 유지되어 누적 효과 관찰의 기준점이 된다(GrowthBook 5% 관행). 표본 예산 검증은 holdout 몫을 제외한 예산으로 계산한다.
+- **승격 확정 웨이브** — 함대가 수렴하면 승격 후보 1개 대 공유 기준선의 확인 웨이브를 **신규 표본**으로 1회 실행한다. 순위 선택에 쓴 데이터와 효과 추정 데이터를 분리해 승자의 저주를 완화한다(선택/추정 분리). 확인 웨이브의 판정도 동일한 `evaluateExperiment`가 계산하며, 확인 실패 시 승격 후보는 `culled`로 강등되고 사람의 결정 단계로 넘어간다.
+- **stopRule 권장 패턴** — "수렴 후 확인 웨이브 1회 통과 시 종료"를 기본 제안 문구로 둔다.
