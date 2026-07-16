@@ -1,6 +1,45 @@
 import { expect, test } from "@playwright/test";
+import type { MeasurementOutcome, NormalizedMeasurement } from "../src/features/harness/contract";
+import { parseMeasurementRequest } from "../src/features/harness/lib/measurement-query";
+import { createConfidenceBand, createQueryHash } from "../src/features/harness/server/measure-service";
 
-test("fleet: preregister a variant fleet, judge a wave and persist the history", async ({ page }) => {
+const SEGMENT_COUNTS: readonly { value: string; entered: number; completed: number }[] = [
+  { value: "baseline", entered: 1_000, completed: 100 },
+  { value: "v-1", entered: 400, completed: 56 },
+  { value: "v-2", entered: 400, completed: 42 },
+];
+
+test("fleet: preregister a variant fleet, prefill a wave from measurement and persist the history", async ({ page }) => {
+  await page.route("**/api/harness/measure", async (route) => {
+    const parsed = parseMeasurementRequest(route.request().postDataJSON());
+    if (!parsed.ok || parsed.value.query.capability !== "segments") {
+      await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ ok: false, code: "invalid_response", message: "invalid fixture" }) });
+      return;
+    }
+    const query = parsed.value.query;
+    const queryHash = await createQueryHash(query);
+    const measurements: NormalizedMeasurement[] = SEGMENT_COUNTS.map(({ value, entered, completed }) => ({
+      metricLabel: `변형 전환 · ${value}`,
+      observation: `${query.dimension}=${value} 표본 ${entered}명 중 ${completed}명이 마지막 단계에 도달했습니다.`,
+      sourceKind: "calculated",
+      direction: "context",
+      values: { enteredUsers: entered, completedUsers: completed, conversionRate: Math.round((completed / entered) * 1_000) / 10 },
+      provenance: {
+        adapterId: parsed.value.adapterId,
+        capability: "segments",
+        source: "UX MeasureLab Events",
+        observedAt: "2026-07-16T00:00:00.000Z",
+        period: `${query.window.from} ~ ${query.window.to}`,
+        window: query.window,
+        segment: `${query.dimension}=${value}`,
+        queryHash,
+      },
+      confidence: createConfidenceBand(entered),
+    }));
+    const outcome: MeasurementOutcome = { ok: true, measurements, degraded: [] };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(outcome) });
+  });
+
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
@@ -51,11 +90,19 @@ test("fleet: preregister a variant fleet, judge a wave and persist the history",
   await expect(fleetSection.getByText(/PREREGISTERED FLEET/i)).toBeVisible();
   await expect(fleetSection.getByText(/변형 2개/)).toBeVisible();
 
-  // 웨이브 1: 공유 기준선 10% 대비 A안 +4pp(승급), B안 +0.5pp(컷)
-  await fleetSection.getByLabel("A안 전환 사용자").fill("56");
-  await fleetSection.getByLabel("A안 전체 사용자").fill("400");
-  await fleetSection.getByLabel("B안 전환 사용자").fill("42");
-  await fleetSection.getByLabel("B안 전체 사용자").fill("400");
+  // 웨이브 1 관찰을 first-party 변형별 측정에서 프리필한다 (guardrail은 수동 유지)
+  await fleetSection.locator("summary").filter({ hasText: /측정에서 채우기/ }).click();
+  await fleetSection.getByLabel(/관찰 시작/).fill("2026-07-01T00:00");
+  await fleetSection.getByLabel(/관찰 종료/).fill("2026-07-08T00:00");
+  await fleetSection.getByRole("button", { name: /변형별 관찰 불러오기/ }).click();
+  await expect(fleetSection.getByText(/전환 수치를 채웠습니다/)).toBeVisible();
+  await expect(fleetSection.getByLabel("A안 전환 사용자")).toHaveValue("56");
+  await expect(fleetSection.getByLabel("A안 전체 사용자")).toHaveValue("400");
+  await expect(fleetSection.getByLabel("B안 전환 사용자")).toHaveValue("42");
+  await expect(fleetSection.locator("#fleet-baseline-converted")).toHaveValue("100");
+  await expect(fleetSection.locator("#fleet-baseline-total")).toHaveValue("1000");
+
+  // 공유 기준선 10% 대비 A안 +4pp(승급), B안 +0.5pp(컷)
   await fleetSection.getByRole("button", { name: /웨이브 1 판정/i }).click();
 
   await expect(fleetSection.getByText(/WAVE 1 VERDICTS/i)).toBeVisible();

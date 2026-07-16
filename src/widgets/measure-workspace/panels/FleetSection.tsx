@@ -183,7 +183,7 @@ export function FleetSection(props: FleetSectionProps) {
             </article>
           ) : null}
           {nextWave?.proceed ? (
-            <FleetWaveForm activeVariantIds={nextWave.activeVariantIds} key={nextWave.wave} onRecord={props.onRecordWave} plan={fleet.plan} sampleUsedBefore={lastWave ? lastWave.input.sampleUsedBefore + lastWave.result.sampleUsed : 0} wave={nextWave.wave} />
+            <FleetWaveForm activeVariantIds={nextWave.activeVariantIds} funnelStepIds={props.project.funnelImport?.steps.map((step) => step.id) ?? []} key={nextWave.wave} onRecord={props.onRecordWave} plan={fleet.plan} sampleUsedBefore={lastWave ? lastWave.input.sampleUsedBefore + lastWave.result.sampleUsed : 0} wave={nextWave.wave} />
           ) : nextWave ? (
             <p className={styles.observationNote} role="status">{STOP_LABELS[nextWave.reason]}</p>
           ) : null}
