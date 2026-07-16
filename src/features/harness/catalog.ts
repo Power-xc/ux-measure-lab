@@ -93,11 +93,11 @@ export const HARNESS_SKILLS: readonly HarnessSkill[] = [
   {
     id: "fleet",
     name: "함대 판독",
-    exampleQuestions: ["동시에 실험 중인 12개 변형 가운데 성공 기준을 넘은 변형은 무엇인가요?"],
+    exampleQuestions: ["동시에 실험 중인 변형 가운데 어느 변형의 전환이 가장 높게 관찰되나요?"],
     requiredCapabilities: ["funnel", "segments"],
     sourceKind: "calculated",
-    observationTemplate: "{variantCount}개 변형 중 {advancedCount}개가 성공 기준 이상, {culledCount}개가 컷 기준으로 관찰되었습니다.",
-    available: false,
+    observationTemplate: "{dimension}={value} 표본 {enteredUsers}명 중 {completedUsers}명이 마지막 단계에 도달해 전환율 {conversionRate}%로 관찰되었습니다.",
+    available: true,
   },
 ];
 
