@@ -44,6 +44,25 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 - **버전과 마이그레이션** — evidence 스키마는 버전 관리되고, 스키마가 진화해도 기존 프로젝트 데이터는 마이그레이션으로 호환을 유지합니다. 현재 저장소가 이미 versioned schema 검증 위에서 동작하며 같은 원칙을 확장합니다.
 - **성장하는 생태계** — 스킬과 어댑터가 추가될수록 같은 질문이 더 풍부한 증거로 답해집니다. 도구를 갈아탈 때마다 제품을 재설계하는 것이 아니라, 생태계에 어댑터 하나를 더하는 방식으로 성장합니다.
 
+## 실험의 단위를 바꾼다 — A/B 쌍에서 실험 함대로
+
+AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들기에서 트래픽과 판정으로 이동했습니다. 업계는 이미 캠페인당 두세 개가 아니라 수백~수천 개 단위로 실험합니다 — Booking.com은 상시 1,000개 이상의 동시 실험을 운영하고, Yum!(KFC)은 연 2억 건 이상의 상호작용을 AI decisioning에 맡겼습니다. 그러나 보정 없는 대량 실험은 오탐 공장이 됩니다(다중 비교·승자의 저주·novelty effect).
+
+UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배분이나 AI 판정 대신, 사전 등록과 결정적 계산을 대량 실험의 규모로 확장합니다.
+
+```text
+함대 사전 등록 (threshold · 변형별 최소 표본 · 표본 예산 · 동시 상한 · 생존 비율 · guardrail · 종료 규칙)
+→ 웨이브 판정: guardrail 위반 컷 → 표본 부족 재수집 → 원시 delta 순위 → 생존 비율 컷
+→ 다음 웨이브 배분 또는 중단 (수렴 · 예산 소진 · 전멸)
+→ 승격 후보는 제안일 뿐 — 최종 결정은 사람이 기록
+```
+
+- **정책이 사람의 일** — AI가 변형 후보를 대량 생성해도, 사람은 변형 선택자가 아니라 정책 설계자·최종 결정권자로 이동합니다. 함대의 컷·승급·수렴은 전부 결정적 TypeScript가 계산합니다.
+- **기존 판정의 재사용** — 변형별 판정은 단일 실험과 동일한 `evaluateExperiment`를 그대로 사용합니다. 함대는 순위·컷·예산 배분만 더합니다.
+- **안전 우선, 근거 우선** — guardrail 위반은 delta가 최고여도 컷하고, 표본 부족은 컷이 아니라 재수집입니다. 예산 초과는 음수로 그대로 드러냅니다.
+
+배경 리서치와 채택·거부 근거는 [Experiment Fleet Research](features/experiment-fleet/research.md)와 [ADR-0002](docs/adrs/0002-experiment-fleet.md)에 정리되어 있습니다.
+
 ## 방향
 
 현재 버전은 분석 export(CSV)를 수동으로 연결하는 evidence-to-decision 워크스페이스이며, 위 harness 구조를 다음 단계들로 구현합니다.
@@ -56,6 +75,7 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 | Ingest 서버 | 자체 이벤트 수신, 세션화, 90일 보존 | **구현** · Supabase/Upstash 연결 대기 |
 | Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성 측정이 구성 | **구현** (스킬 3종) |
 | External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
+| Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하는 결정적 엔진 | **엔진 구현** · UI/harness 연동 로드맵 |
 | Session replay | 사전 동의, 기본 마스킹, 짧은 보존을 전제로 한 세션 녹화 | spec 확정 · 로드맵 |
 
 상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
@@ -76,6 +96,7 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 | 질문 → 측정 → Evidence 적용 (퍼널 이탈·마찰 신호·여정 연속성) | 구현 |
 | First-party SDK와 ingest 파이프라인 (동의 게이트·마스킹 기본) | 구현, 실수집은 프로비저닝 후 |
 | PostHog read-only 어댑터 | 구현, 실계정 검증 대기 |
+| Experiment fleet 엔진 — 함대 사전 등록·웨이브 컷·다음 웨이브 배분 | 엔진 구현, 워크스페이스 UI는 로드맵 |
 | 근거 기반 AI 진단·가설 제안 | 선택 기능, loopback development에서 명시적 활성화 필요 |
 | Session replay | spec만 확정, 미구현 |
 | 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
@@ -141,7 +162,7 @@ npm audit --omit=dev
 npm run test:e2e
 ```
 
-단위 테스트 165개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드를 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 8종은 8단계 golden loop, 복구, 키보드, 390px reflow와 harness 측정 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 182개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet 엔진(사전 등록·웨이브 컷·배분)을 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 8종은 8단계 golden loop, 복구, 키보드, 390px reflow와 harness 측정 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 
@@ -163,10 +184,31 @@ npm run test:e2e
 - 회사용 권한, 협업, 감사 로그, 서버 동기화는 아직 없습니다.
 - 실제 OpenAI provider 호출은 사용자의 키와 opt-in 설정이 있어야 별도로 검증할 수 있습니다.
 
+## 아키텍처
+
+상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 핵심 결정의 이유만 요약합니다.
+
+### 왜 이 스택인가
+
+Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 테스트는 `node:test`. 1인 개발과 local-first 전제에서 런타임 의존성을 Next/React 둘로 최소화했고(Supabase·Upstash·PostHog는 전부 fetch 직호출), 전환율·delta·verdict 같은 판정 로직은 프레임워크에 묶이지 않는 순수 TypeScript 모듈로 분리해 `node --test`로 즉시 검증합니다. 영속성은 versioned `localStorage` repository + JSON 백업 — 서버 DB보다 느슨하지만, 개인 워크스페이스에서 데이터 주권과 복구 경로가 더 중요하다고 판단했습니다.
+
+### 왜 이 구조인가
+
+`entities → features → widgets` 단방향 의존입니다. 어휘(capability·verdict·evidence)의 단일 출처는 entities이고, features는 그것을 재수출만 합니다. 외부 입력(CSV·JSON·URL·HTML·AI 출력·어댑터 응답)은 전부 trust boundary에서 runtime validation을 거치며, AI 제안 경로와 결정적 계산 경로를 코드 수준에서 분리해 AI가 수치를 만들 수 없게 했습니다. measurement harness와 experiment fleet이 모두 "계약 선언 → 자동 매칭 → 결정적 실행" 구조인 이유는, 소스와 스킬이 늘어나도 판정 코드를 재작성하지 않기 위해서입니다 ([ADR-0001](docs/adrs/0001-decision-layer.md), [ADR-0002](docs/adrs/0002-experiment-fleet.md)).
+
+### 포기한 것
+
+- **자체 analytics 플랫폼** — 수집·쿼리·replay 인프라 대신 기존 도구 위의 decision layer로 시작했습니다. 통제력을 포기하고 검증 속도를 얻는 트레이드오프입니다 (ADR-0001).
+- **밴딧 자동 배분과 AI 판정** — 대량 실험 대안으로 검토했지만 확률적 배분은 재현·감사가 어려워 결정적 successive halving을 선택했습니다 (ADR-0002).
+- **p-value 자동 판정** — 소규모 트래픽에서 오용 위험이 커서 practical threshold + 표본·기간 규율로 대체했습니다.
+- **인증·팀 협업·서버 동기화** — Personal v1 범위 밖. 다중 사용자 전 RLS를 전제 조건으로 남겼습니다.
+
 ## 문서
 
 - [Product Brief](docs/product-brief.md)
 - [Measurement Harness Spec](features/measurement-harness/spec.md)
+- [Experiment Fleet Spec](features/experiment-fleet/spec.md)
+- [Experiment Fleet Research](features/experiment-fleet/research.md)
 - [Session Replay Spec](features/session-replay/spec.md)
 - [Personal Product v1 Spec](features/personal-product-v1/spec.md)
 - [Architecture](docs/architecture.md)
@@ -176,6 +218,7 @@ npm run test:e2e
 - [Verification](docs/verification.md)
 - [Dogfood Template](docs/dogfood-template.md)
 - [Decision Layer ADR](docs/adrs/0001-decision-layer.md)
+- [Experiment Fleet ADR](docs/adrs/0002-experiment-fleet.md)
 - [Research Evidence Registry](research/evidence-registry.md)
 - [Research Claim Audit](research/claim-audit.md)
 
