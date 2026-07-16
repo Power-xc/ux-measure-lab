@@ -175,6 +175,58 @@ test("interaction and path aggregates are normalized without causal claims", asy
   assert.equal(parseNormalizedMeasurement(pathOutcome.measurements[0]).ok, true);
 });
 
+test("segments measurement normalizes per-variant funnels and degrades small variants", async () => {
+  const query: MeasurementQuery = { capability: "segments", steps: ["enter", "convert"], dimension: "variant", window: WINDOW };
+  const meta: SourceAdapterMeta = { ...META, capabilities: [...META.capabilities, "segments"] };
+  const reader = new InMemoryAggregateReader({
+    segmented: [{
+      input: query,
+      rows: [
+        { value: "v-2", counts: [400, 52] },
+        { value: "v-1", counts: [400, 56] },
+        { value: "baseline", counts: [1_000, 100] },
+        { value: "v-3", counts: [20, 5] },
+      ],
+    }],
+  });
+  const outcome = await createMeasureService(reader, meta).measure(query, { now: NOW, cache: new TestCache() });
+
+  assert.equal(outcome.ok, true);
+  if (!outcome.ok) return;
+  assert.deepEqual(
+    outcome.measurements.map((measurement) => measurement.provenance.segment),
+    ["variant=baseline", "variant=v-1", "variant=v-2"],
+  );
+  assert.deepEqual(outcome.measurements[1].values, { enteredUsers: 400, completedUsers: 56, conversionRate: 14 });
+  assert.equal(outcome.degraded.length, 1);
+  assert.match(outcome.degraded[0].detail, /variant=v-3.*표본 20/);
+  assert.equal(parseNormalizedMeasurement(outcome.measurements[0]).ok, true);
+  assert.doesNotMatch(outcome.measurements[0].observation, /원인|때문|유발/);
+
+  const queryHash = await createQueryHash(query);
+  assert.equal(measurementMatchesQuery(outcome.measurements[0], META.adapterId, query, queryHash), true);
+  const forged = { ...outcome.measurements[0], provenance: { ...outcome.measurements[0].provenance, segment: "plan=pro" } };
+  assert.equal(measurementMatchesQuery(forged, META.adapterId, query, queryHash), false);
+});
+
+test("segments measurement rejects malformed aggregates and reports value-free sample gaps", async () => {
+  const query: MeasurementQuery = { capability: "segments", steps: ["enter", "convert"], dimension: "variant", window: WINDOW };
+  const meta: SourceAdapterMeta = { ...META, capabilities: [...META.capabilities, "segments"] };
+  const service = (rows: readonly { value: string; counts: readonly number[] }[]) =>
+    createMeasureService(new InMemoryAggregateReader({ segmented: [{ input: query, rows }] }), meta)
+      .measure(query, { now: NOW, cache: new TestCache() });
+
+  const duplicated = await service([{ value: "v-1", counts: [400, 56] }, { value: "v-1", counts: [300, 30] }]);
+  assert.equal(duplicated.ok === false && duplicated.code, "invalid_response");
+
+  const increasing = await service([{ value: "v-1", counts: [100, 200] }]);
+  assert.equal(increasing.ok === false && increasing.code, "invalid_response");
+
+  const tooSmall = await service([{ value: "v-1", counts: [20, 5] }]);
+  assert.equal(tooSmall.ok === false && tooSmall.code, "insufficient_sample");
+  assert.equal(tooSmall.ok === false && "measurements" in tooSmall, false);
+});
+
 test("measure service caches a successful normalized result by queryHash", async () => {
   const query: MeasurementQuery = { capability: "paths", startEvent: "signup", endEvent: "activate", window: WINDOW };
   let calls = 0;

@@ -116,6 +116,70 @@ test("SupabaseAggregateReader rejects upstream errors and unsupported funnel seg
   assert.equal(fake.calls.length, 1);
 });
 
+test("SupabaseAggregateReader groups segmented funnel rows per variant value", async () => {
+  const fake = fakeFetch([
+    Response.json([
+      { value: "baseline", step: "enter", users: 1_000 },
+      { value: "baseline", step: "convert", users: 100 },
+      { value: "v-1", step: "enter", users: 400 },
+      { value: "v-1", step: "convert", users: 56 },
+    ]),
+  ]);
+  const reader = new SupabaseAggregateReader(CONFIG, fake.fetcher);
+
+  assert.deepEqual(
+    await reader.segmentedFunnelCounts({ steps: ["enter", "convert"], dimension: "variant", window: WINDOW }),
+    [
+      { value: "baseline", counts: [1_000, 100] },
+      { value: "v-1", counts: [400, 56] },
+    ],
+  );
+  assert.equal(fake.calls[0].url, "https://project.supabase.co/rest/v1/rpc/segmented_funnel_counts");
+  assert.deepEqual(JSON.parse(String(fake.calls[0].init?.body)) as unknown, {
+    p_site_id: CONFIG.siteId,
+    p_steps: ["enter", "convert"],
+    p_dimension: "variant",
+    p_from: WINDOW.from,
+    p_to: WINDOW.to,
+  });
+});
+
+test("SupabaseAggregateReader rejects segmented rows with broken grouping", async () => {
+  const brokenStepOrder = fakeFetch([
+    Response.json([
+      { value: "v-1", step: "convert", users: 56 },
+      { value: "v-1", step: "enter", users: 400 },
+    ]),
+  ]);
+  await assert.rejects(
+    new SupabaseAggregateReader(CONFIG, brokenStepOrder.fetcher)
+      .segmentedFunnelCounts({ steps: ["enter", "convert"], dimension: "variant", window: WINDOW }),
+    /segmented_funnel_counts_response_invalid/,
+  );
+
+  const duplicatedValue = fakeFetch([
+    Response.json([
+      { value: "v-1", step: "enter", users: 400 },
+      { value: "v-1", step: "convert", users: 56 },
+      { value: "v-1", step: "enter", users: 300 },
+      { value: "v-1", step: "convert", users: 30 },
+    ]),
+  ]);
+  await assert.rejects(
+    new SupabaseAggregateReader(CONFIG, duplicatedValue.fetcher)
+      .segmentedFunnelCounts({ steps: ["enter", "convert"], dimension: "variant", window: WINDOW }),
+    /segmented_funnel_counts_response_invalid/,
+  );
+});
+
+test("segmented funnel migration assigns visitors to their first variant value", async () => {
+  const migration = await readFile(new URL("../../../../supabase/migrations/0003_segmented_funnel.sql", import.meta.url), "utf8");
+  assert.match(migration, /distinct on \(e\.event_id\)/);
+  assert.match(migration, /distinct on \(e\.anon_id\)/);
+  assert.match(migration, /e\.props \? p_dimension/);
+  assert.match(migration, /grant execute on function segmented_funnel_counts/);
+});
+
 test("aggregate RPC migration deduplicates retries and uses the collector selector key", async () => {
   const migration = await readFile(new URL("../../../../supabase/migrations/0002_aggregates.sql", import.meta.url), "utf8");
   assert.match(migration, /distinct on \(e\.event_id\)/);
