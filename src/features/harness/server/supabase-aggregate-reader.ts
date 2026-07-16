@@ -6,6 +6,8 @@ import type {
   InteractionSignal,
   PathReachInput,
   PathReachResult,
+  SegmentedFunnelInput,
+  SegmentedFunnelRow,
 } from "./aggregate-reader.ts";
 
 export type SupabaseAggregateReaderConfig = {
@@ -14,7 +16,7 @@ export type SupabaseAggregateReaderConfig = {
   siteId: string;
 };
 
-type RpcName = "funnel_counts" | "interaction_counts" | "path_reach";
+type RpcName = "funnel_counts" | "interaction_counts" | "path_reach" | "segmented_funnel_counts";
 type UnknownRecord = Record<string, unknown>;
 
 type FunnelRow = {
@@ -104,6 +106,41 @@ function parsePathReachRows(payload: unknown): PathReachResult {
   return { startCount: payload[0].started, reachedCount: payload[0].reached };
 }
 
+type SegmentedRawRow = {
+  value: string;
+  step: string;
+  users: number;
+};
+
+function isSegmentedRawRow(value: unknown): value is SegmentedRawRow {
+  return isRecord(value)
+    && hasExactKeys(value, ["value", "step", "users"])
+    && typeof value.value === "string"
+    && value.value.length > 0
+    && typeof value.step === "string"
+    && isCount(value.users);
+}
+
+// RPC는 값별로 step 순서가 이어진 평평한 행을 반환한다. 값 단위로 재조립하며 순서·중복을 검증한다.
+function parseSegmentedRows(payload: unknown, steps: readonly string[]): readonly SegmentedFunnelRow[] {
+  if (!Array.isArray(payload) || payload.length % steps.length !== 0) invalidResponse("segmented_funnel_counts");
+  const rows: SegmentedFunnelRow[] = [];
+  for (let offset = 0; offset < payload.length; offset += steps.length) {
+    const group = payload.slice(offset, offset + steps.length);
+    const first = group[0];
+    if (!isSegmentedRawRow(first)) invalidResponse("segmented_funnel_counts");
+    const counts = group.map((row, index) => {
+      if (!isSegmentedRawRow(row) || row.value !== first.value || row.step !== steps[index]) {
+        invalidResponse("segmented_funnel_counts");
+      }
+      return row.users;
+    });
+    if (rows.some((row) => row.value === first.value)) invalidResponse("segmented_funnel_counts");
+    rows.push({ value: first.value, counts });
+  }
+  return rows;
+}
+
 export class SupabaseAggregateReader implements AggregateReader {
   private readonly config: SupabaseAggregateReaderConfig;
   private readonly fetcher: typeof fetch;
@@ -169,5 +206,16 @@ export class SupabaseAggregateReader implements AggregateReader {
       p_to: input.window.to,
     }, signal);
     return parsePathReachRows(payload);
+  }
+
+  async segmentedFunnelCounts(input: SegmentedFunnelInput, signal?: AbortSignal): Promise<readonly SegmentedFunnelRow[]> {
+    const payload = await this.rpc("segmented_funnel_counts", {
+      p_site_id: this.config.siteId,
+      p_steps: input.steps,
+      p_dimension: input.dimension,
+      p_from: input.window.from,
+      p_to: input.window.to,
+    }, signal);
+    return parseSegmentedRows(payload, input.steps);
   }
 }

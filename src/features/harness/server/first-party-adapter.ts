@@ -14,7 +14,7 @@ const META: SourceAdapterMeta = {
   displayName: "UX MeasureLab Events",
   kind: "first_party",
   access: "read_write",
-  capabilities: ["funnel", "interaction", "paths"],
+  capabilities: ["funnel", "interaction", "paths", "segments"],
 };
 
 export function createFirstPartyAdapter(reader: AggregateReader): SourceAdapter {

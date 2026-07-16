@@ -11,13 +11,14 @@ import type {
   TimeWindow,
 } from "../contract.ts";
 import type { AggregateReader, InteractionSignal } from "./aggregate-reader.ts";
+import { measureSegments } from "./measure-segments.ts";
 
 export const MINIMUM_SAMPLE_SIZE = 30;
 export const CONFIDENCE_MEDIUM_MINIMUM = 100;
 export const CONFIDENCE_HIGH_MINIMUM = 1_000;
 
-type SupportedQuery = Extract<MeasurementQuery, { capability: "funnel" | "interaction" | "paths" }>;
-type MeasureDependencies = {
+type SupportedQuery = Extract<MeasurementQuery, { capability: "funnel" | "interaction" | "paths" | "segments" }>;
+export type MeasureDependencies = {
   reader: AggregateReader;
   meta: SourceAdapterMeta;
   context: AdapterContext;
@@ -88,6 +89,17 @@ export function createConfidenceBand(sampleSize: number): ConfidenceBand {
   };
 }
 
+// segments 측정은 provenance.segment가 요청 dimension에 속한 값이어야 한다. 나머지 유형은 단일 라벨과 정확히 일치해야 한다.
+function segmentMatchesQuery(segment: string, query: MeasurementQuery): boolean {
+  if (query.capability === "segments") {
+    return segment.startsWith(`${query.dimension}=`) && segment.length > query.dimension.length + 1;
+  }
+  const expected = "segment" in query && query.segment
+    ? `${query.segment.dimension}=${query.segment.value}`
+    : "전체 사용자";
+  return segment === expected;
+}
+
 export function measurementMatchesQuery(
   measurement: NormalizedMeasurement,
   adapterId: string,
@@ -96,15 +108,12 @@ export function measurementMatchesQuery(
 ): boolean {
   const query = normalizeMeasurementQuery(input);
   if (!("window" in query)) return false;
-  const segment = "segment" in query && query.segment
-    ? `${query.segment.dimension}=${query.segment.value}`
-    : "전체 사용자";
   return measurement.provenance.adapterId === adapterId
     && measurement.provenance.capability === query.capability
     && measurement.provenance.queryHash === queryHash
     && measurement.provenance.window.from === query.window.from
     && measurement.provenance.window.to === query.window.to
-    && measurement.provenance.segment === segment
+    && segmentMatchesQuery(measurement.provenance.segment, query)
     && measurement.confidence.level === createConfidenceBand(measurement.confidence.sampleSize).level;
 }
 
@@ -229,13 +238,14 @@ async function measurePaths(query: Extract<SupportedQuery, { capability: "paths"
 }
 
 function supportsQuery(query: MeasurementQuery, meta: SourceAdapterMeta): query is SupportedQuery {
-  return (query.capability === "funnel" || query.capability === "interaction" || query.capability === "paths")
+  return (query.capability === "funnel" || query.capability === "interaction" || query.capability === "paths" || query.capability === "segments")
     && meta.capabilities.includes(query.capability);
 }
 
 async function executeMeasurement(query: SupportedQuery, deps: MeasureDependencies): Promise<MeasurementOutcome> {
   if (query.capability === "funnel") return measureFunnel(query, deps);
   if (query.capability === "interaction") return measureInteraction(query, deps);
+  if (query.capability === "segments") return measureSegments(query, deps);
   return measurePaths(query, deps);
 }
 
