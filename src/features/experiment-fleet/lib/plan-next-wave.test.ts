@@ -47,6 +47,7 @@ function makeWaveResult(overrides: Partial<FleetWaveResult>): FleetWaveResult {
     promotionCandidateId: null,
     sampleUsed: 0,
     sampleBudgetRemaining: 7350,
+    exposureWarnings: [],
     ...overrides,
   };
 }

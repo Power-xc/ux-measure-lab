@@ -45,14 +45,15 @@ export type FleetVariantObservation = {
 };
 
 // 하나의 웨이브는 공유 기준선 하나와 변형 관찰 여러 개로 구성된다.
-export type FleetWaveInput = {
-  plan: FleetPlan;
+export type FleetWaveObservations = {
   wave: number;
   baseline: RateCount;
   guardrailBaseline?: RateCount;
   observations: FleetVariantObservation[];
   sampleUsedBefore: number;
 };
+
+export type FleetWaveInput = FleetWaveObservations & { plan: FleetPlan };
 
 export type FleetVariantAction = "advance" | "cull" | "needs_sample";
 
@@ -72,8 +73,21 @@ export type FleetWaveResult = {
   promotionCandidateId: string | null;
   sampleUsed: number;
   sampleBudgetRemaining: number; // 음수면 예산 초과를 그대로 드러낸다
+  exposureWarnings: string[]; // 배분 이상 신호: 표본이 웨이브 중앙값의 절반 미만·2배 초과인 변형. 판정은 바꾸지 않는다
 };
 
 export type NextWaveDecision =
   | { proceed: true; wave: number; activeVariantIds: string[]; perVariantSampleTarget: number }
   | { proceed: false; reason: "no_survivors" | "converged" | "budget_exhausted"; survivors: string[] };
+
+// 저장용 웨이브 기록. 입력을 함께 보존해 판정을 언제든 재계산·검증할 수 있게 한다.
+export type FleetWaveRecord = {
+  recordedAt: string;
+  input: FleetWaveObservations;
+  result: FleetWaveResult;
+};
+
+export type FleetState = {
+  plan: FleetPlan;
+  waves: FleetWaveRecord[];
+};

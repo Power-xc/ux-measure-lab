@@ -80,6 +80,17 @@ function actionFor(evaluation: ExperimentEvaluation): FleetVariantAction | "rank
   return "rankable";
 }
 
+// SRM류 통계 검정 대신 쓰는 결정적 배분 이상 신호. 동일 배분이 전제인 웨이브에서 중앙값 대비 심한 편차만 표시한다.
+function exposureWarnings(observations: readonly FleetVariantObservation[]): string[] {
+  if (observations.length < 2) return [];
+  const totals = observations.map((observation) => observation.variant.total).sort((a, b) => a - b);
+  const middle = totals.length / 2;
+  const median = totals.length % 2 === 1 ? totals[Math.floor(middle)] : (totals[middle - 1] + totals[middle]) / 2;
+  return observations
+    .filter((observation) => observation.variant.total * 2 < median || observation.variant.total > median * 2)
+    .map((observation) => observation.variantId);
+}
+
 function compareForRank(a: EvaluatedVariant, b: EvaluatedVariant): number {
   if (a.rawDeltaPp !== b.rawDeltaPp) return b.rawDeltaPp - a.rawDeltaPp;
   if (a.observation.variant.total !== b.observation.variant.total) {
@@ -127,5 +138,6 @@ export function evaluateFleetWave(input: FleetWaveInput): FleetWaveResult {
     promotionCandidateId: top && top.evaluation.verdict === "support" ? top.observation.variantId : null,
     sampleUsed,
     sampleBudgetRemaining: input.plan.policy.sampleBudget - input.sampleUsedBefore - sampleUsed,
+    exposureWarnings: exposureWarnings(input.observations),
   };
 }

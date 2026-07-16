@@ -174,6 +174,29 @@ test("FLEET-WAVE-005 rejects malformed waves before judging anything", () => {
   );
 });
 
+test("FLEET-WAVE-007 flags exposure imbalance without changing any verdict", () => {
+  const result = evaluateFleetWave(makeWave({
+    plan: makePlan(["v-a", "v-b", "v-c"]),
+    observations: [
+      { variantId: "v-a", variant: { converted: 56, total: 400 }, observedDays: 7 },
+      { variantId: "v-b", variant: { converted: 52, total: 400 }, observedDays: 7 },
+      { variantId: "v-c", variant: { converted: 22, total: 150 }, observedDays: 7 },
+    ],
+  }));
+  // 중앙값 400의 절반 미만인 150만 배분 이상으로 표시된다. 판정·순위는 그대로다.
+  assert.deepEqual(result.exposureWarnings, ["v-c"]);
+  assert.equal(result.outcomes.find((outcome) => outcome.variantId === "v-c")?.action, "needs_sample");
+
+  const balanced = evaluateFleetWave(makeWave({
+    plan: makePlan(["v-a", "v-b"]),
+    observations: [
+      { variantId: "v-a", variant: { converted: 56, total: 400 }, observedDays: 7 },
+      { variantId: "v-b", variant: { converted: 52, total: 360 }, observedDays: 7 },
+    ],
+  }));
+  assert.deepEqual(balanced.exposureWarnings, []);
+});
+
 test("FLEET-WAVE-006 keeps every judged variant when keep share is 1 and at least one when share is small", () => {
   const everyone = evaluateFleetWave(makeWave({
     plan: makePlan(["v-a", "v-b"], { keepShare: 1 }),
