@@ -49,12 +49,16 @@ function buildQuery(input: {
   target: string;
   startEvent: string;
   endEvent: string;
+  dimension: string;
 }): MeasurementQuery | string {
   const window = parseWindow(input.window);
   if (typeof window === "string") return window;
-  if (input.skillId === "funnel") {
+  if (input.skillId === "funnel" || input.skillId === "fleet") {
     const steps = input.project.funnelImport?.steps.map((step) => step.id) ?? [];
-    return steps.length >= 2 ? { capability: "funnel", steps, window } : "퍼널 단계가 두 개 이상 필요합니다.";
+    if (steps.length < 2) return "퍼널 단계가 두 개 이상 필요합니다.";
+    if (input.skillId === "funnel") return { capability: "funnel", steps, window };
+    const dimension = input.dimension.trim();
+    return dimension ? { capability: "segments", steps, dimension, window } : "변형 배정 속성 키를 입력하세요.";
   }
   if (input.skillId === "interaction") {
     if (input.signals.length === 0) return "마찰 신호를 하나 이상 선택하세요.";
@@ -78,13 +82,14 @@ function WindowFields(props: { value: WindowInput; onChange(value: WindowInput):
 
 function QueryParameters(props: {
   skillId: HarnessSkillId; project: Project; window: WindowInput; signals: Signal[]; target: string;
-  startEvent: string; endEvent: string; onWindow(value: WindowInput): void; onSignals(value: Signal[]): void;
-  onTarget(value: string): void; onStart(value: string): void; onEnd(value: string): void;
+  startEvent: string; endEvent: string; dimension: string; onWindow(value: WindowInput): void; onSignals(value: Signal[]): void;
+  onTarget(value: string): void; onStart(value: string): void; onEnd(value: string): void; onDimension(value: string): void;
 }) {
   const steps = props.project.funnelImport?.steps ?? [];
   const toggleSignal = (signal: Signal) => props.onSignals(props.signals.includes(signal) ? props.signals.filter((item) => item !== signal) : [...props.signals, signal]);
   return <>
-    {props.skillId === "funnel" ? <div className={styles.harnessParameterBlock}><strong>측정할 퍼널 단계</strong><ol>{steps.map((step) => <li key={step.id}>{step.label} <small>({step.id})</small></li>)}</ol></div> : null}
+    {props.skillId === "funnel" || props.skillId === "fleet" ? <div className={styles.harnessParameterBlock}><strong>측정할 퍼널 단계</strong><ol>{steps.map((step) => <li key={step.id}>{step.label} <small>({step.id})</small></li>)}</ol></div> : null}
+    {props.skillId === "fleet" ? <Field helper="이벤트 props에서 변형 배정을 담는 키" htmlFor="harness-dimension" label="변형 배정 속성 키"><input maxLength={100} onChange={(event) => props.onDimension(event.target.value)} value={props.dimension} /></Field> : null}
     {props.skillId === "interaction" ? <>
       <fieldset className={styles.harnessSignalGroup}><legend>마찰 신호</legend>{SIGNALS.map((signal) => <label key={signal.id}><input checked={props.signals.includes(signal.id)} onChange={() => toggleSignal(signal.id)} type="checkbox" />{signal.label}</label>)}</fieldset>
       <Field htmlFor="harness-target" label="대상 경로 또는 요소" required={false}><input maxLength={500} onChange={(event) => props.onTarget(event.target.value)} placeholder="예: /signup 또는 [data-action=connect]" value={props.target} /></Field>
@@ -138,6 +143,7 @@ export function HarnessEvidenceSection({ project, onApplyEvidence }: SectionProp
   const [windowInput, setWindowInput] = useState<WindowInput>(initialWindow);
   const [signals, setSignals] = useState<Signal[]>(["rage"]);
   const [target, setTarget] = useState("");
+  const [dimension, setDimension] = useState("variant");
   const steps = project.funnelImport?.steps ?? [];
   const [startEvent, setStartEvent] = useState(steps[0]?.id ?? "");
   const [endEvent, setEndEvent] = useState(steps.at(-1)?.id ?? "");
@@ -189,7 +195,7 @@ export function HarnessEvidenceSection({ project, onApplyEvidence }: SectionProp
   async function execute() {
     setOutcome(null); setApplied(false); setApplyError(""); setError("");
     if (!question.trim()) { setError("측정 질문을 입력하세요."); return; }
-    const query = buildQuery({ skillId, project, window: windowInput, signals, target, startEvent, endEvent });
+    const query = buildQuery({ skillId, project, window: windowInput, signals, target, startEvent, endEvent, dimension });
     if (typeof query === "string") { setError(query); return; }
     const adapter = matchingAdapters.find((item) => item.meta().adapterId === adapterId);
     if (!adapter) { setError("질문 유형을 지원하는 측정 소스를 선택하세요."); return; }
@@ -220,7 +226,7 @@ export function HarnessEvidenceSection({ project, onApplyEvidence }: SectionProp
       <Field htmlFor="harness-question" label="측정 질문"><textarea maxLength={500} onChange={(event) => updateQuestion(event.target.value)} placeholder="예: 가입 퍼널에서 가장 큰 이탈은 어디인가요?" rows={3} value={question} /></Field>
       {skill?.exampleQuestions[0] ? <button className={styles.textButton} onClick={() => updateQuestion(skill.exampleQuestions[0] ?? "")} type="button">예시 질문 사용: {skill.exampleQuestions[0]}</button> : null}
       <Field htmlFor="harness-skill" label="질문 유형"><select onChange={(event) => selectSkill(event.target.value)} value={skillId}>{skills.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-      <QueryParameters endEvent={endEvent} onEnd={(value) => changeMeasurement(() => setEndEvent(value))} onSignals={(value) => changeMeasurement(() => setSignals(value))} onStart={(value) => changeMeasurement(() => setStartEvent(value))} onTarget={(value) => changeMeasurement(() => setTarget(value))} onWindow={(value) => changeMeasurement(() => setWindowInput(value))} project={project} signals={signals} skillId={skillId} startEvent={startEvent} target={target} window={windowInput} />
+      <QueryParameters dimension={dimension} endEvent={endEvent} onDimension={(value) => changeMeasurement(() => setDimension(value))} onEnd={(value) => changeMeasurement(() => setEndEvent(value))} onSignals={(value) => changeMeasurement(() => setSignals(value))} onStart={(value) => changeMeasurement(() => setStartEvent(value))} onTarget={(value) => changeMeasurement(() => setTarget(value))} onWindow={(value) => changeMeasurement(() => setWindowInput(value))} project={project} signals={signals} skillId={skillId} startEvent={startEvent} target={target} window={windowInput} />
       <Field htmlFor="harness-adapter" label="측정 소스"><select onChange={(event) => changeMeasurement(() => setAdapterId(event.target.value))} value={adapterId}>{matchingAdapters.map((adapter) => { const meta = adapter.meta(); return <option key={meta.adapterId} value={meta.adapterId}>{meta.displayName}</option>; })}</select></Field>
       {error ? <p className={styles.contextError} role="alert">{error}</p> : null}
       <div className={styles.formActions}><button aria-busy={busy} className={styles.primaryButton} disabled={busy || matchingAdapters.length === 0} onClick={execute} type="button">{busy ? "측정 중…" : "측정 실행"}</button><small>종료된 과거 기간의 동일 조건은 현재 세션 캐시를 재사용합니다.</small></div>
