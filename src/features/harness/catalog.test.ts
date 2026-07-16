@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getAvailableHarnessSkills, getHarnessSkill, HARNESS_SKILLS, supportsHarnessSkill } from "./catalog.ts";
 
-test("catalog keeps all eight measurement skills and exposes only the executable three", () => {
+test("catalog keeps all eight measurement skills and exposes only the executable four", () => {
   assert.equal(HARNESS_SKILLS.length, 8);
   assert.deepEqual(
     getAvailableHarnessSkills().map((skill) => skill.id),
-    ["funnel", "interaction", "paths"],
+    ["funnel", "interaction", "paths", "fleet"],
   );
 });
 

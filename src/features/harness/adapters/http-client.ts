@@ -99,7 +99,7 @@ export function createFirstPartyClientAdapter(fetch?: HarnessFetch): SourceAdapt
       displayName: "UX MeasureLab Events",
       kind: "first_party",
       access: "read_write",
-      capabilities: ["funnel", "interaction", "paths"],
+      capabilities: ["funnel", "interaction", "paths", "segments"],
     },
   });
 }
