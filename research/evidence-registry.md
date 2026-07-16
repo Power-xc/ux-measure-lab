@@ -11,6 +11,8 @@
 | E-005 | AI confidence is commonly miscalibrated. | Supported directionally | Avoid direct self-reported probability in the MVP. | Register calibration papers and evaluation methods. |
 | E-006 | Product analytics, replay, experimentation, and research tools leave workflow gaps between observation and decision. | Product hypothesis | Position UX MeasureLab as a decision layer. | Validate through user interviews and workflow tests. |
 | E-007 | Personal and company project memories require separate boundaries. | Strong design requirement | Use workspace-scoped storage and authorization. | Validate retention and deletion requirements. |
+| E-008 | The unit of experimentation is shifting from single A/B pairs to large concurrent portfolios (Booking.com 1,000+ concurrent, Microsoft ExP ~100k/year, Meta/Google automated asset combinations). | Supported by multiple independent sources | Support a fleet of pre-registered variants, not only one experiment per hypothesis. | Track whether small-traffic products adopt the same unit. |
+| E-009 | Production AI decisioning systems report large-scale uplift (Yum!/KFC 200M+ AI-decisioned interactions, up to 2.6x incremental impact; Kayo 300 → 1.2M actions). | Vendor-reported, directionally credible | Mass experimentation is a real workflow to design for, not hype. | Seek non-vendor validation of uplift magnitudes. |
 
 ## Claims not safe to operationalize yet
 
@@ -23,6 +25,8 @@
 | A-005 | RAG prevents hallucination. | Retrieval improves grounding but does not guarantee correctness. | Validate citations and calculations independently. |
 | A-006 | Causal AI can infer causes from logs. | Observational data alone does not establish causality. | Use causal language only with an appropriate design. |
 | A-007 | Session-replay consent behavior is consistent across named vendors and regions. | Vendor capabilities and law change. | Verify current official docs and regulator sources before implementation. |
+| A-008 | KFC Korea is running Korea's first Braze AI Decisioning Studio deployment with 2,000 creatives over 5 months. | Seminar-teaser claim; no public source confirms the first-mover status or the experiment count. | Treat as an industry signal only. Do not cite the numbers as an adoption fact. |
+| A-009 | Running more experiments produces better decisions by itself. | Uncorrected mass testing inflates false discoveries (up to ~25% error at naive 5% significance), winner's curse and novelty effects bias winners upward. | Scale requires pre-registered policy: guardrails, sample budgets, cull rules, and confirmation on fresh samples. |
 
 ## Immediate research backlog
 
