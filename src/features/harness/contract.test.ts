@@ -114,18 +114,18 @@ test("HAC-01 migrates a v1 workspace losslessly and backs up the original", () =
 
   const loaded = loadWorkspace(storage);
   assert.equal(loaded.ok, true);
-  assert.equal(loaded.workspace.schemaVersion, 2);
+  assert.equal(loaded.workspace.schemaVersion, 3);
   assert.deepEqual(loaded.workspace, base);
 
   assert.equal(storage.getItem(WORKSPACE_BACKUP_KEY), v1raw);
   const persisted = storage.getItem(WORKSPACE_STORAGE_KEY);
   assert.ok(persisted);
-  assert.equal(JSON.parse(persisted).schemaVersion, 2);
+  assert.equal(JSON.parse(persisted).schemaVersion, 3);
 });
 
 test("HAC-01 keeps rejecting future schema versions without touching storage", () => {
   const storage = new MemoryStorage();
-  storage.values.set(WORKSPACE_STORAGE_KEY, '{"schemaVersion":3,"activeProjectId":null,"projects":[]}');
+  storage.values.set(WORKSPACE_STORAGE_KEY, '{"schemaVersion":4,"activeProjectId":null,"projects":[]}');
 
   const loaded = loadWorkspace(storage);
   assert.equal(loaded.ok, false);

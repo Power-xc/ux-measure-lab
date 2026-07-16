@@ -20,6 +20,20 @@ function inputMatchesPlan(input: ExperimentEvaluationInput, plan: ExperimentPlan
     && input.guardrail?.maxIncreasePp === plan.maxGuardrailIncreasePp;
 }
 
+// 함대 도메인 규칙: 확정 KPI·ready 가설 위에서만 존재하고, 웨이브 번호와 표본 예산 사용이 끊김 없이 이어져야 한다.
+function isFleetConsistent(project: Project): boolean {
+  const fleet = project.fleet;
+  if (!fleet) return true;
+  if (project.metric?.status !== "confirmed" || fleet.plan.primaryMetricId !== project.metric.id) return false;
+  if (project.hypothesis?.status !== "ready") return false;
+  let sampleUsedBefore = 0;
+  for (const [index, record] of fleet.waves.entries()) {
+    if (record.input.wave !== index + 1 || record.input.sampleUsedBefore !== sampleUsedBefore) return false;
+    sampleUsedBefore += record.result.sampleUsed;
+  }
+  return true;
+}
+
 export function isProjectStateConsistent(project: Project): boolean {
   if (Date.parse(project.updatedAt) < Date.parse(project.createdAt)) return false;
   const contextReady = [project.context.productName, project.context.audience, project.context.valueAction, project.context.goal]
@@ -58,5 +72,5 @@ export function isProjectStateConsistent(project: Project): boolean {
     if (project.decision.evidenceIds.length === 0 || !hasReferences(project.decision.evidenceIds, availableEvidence)) return false;
   } else if (project.experiment?.status === "decided") return false;
 
-  return true;
+  return isFleetConsistent(project);
 }
