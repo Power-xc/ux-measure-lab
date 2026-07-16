@@ -7,7 +7,8 @@ export type HarnessSkillId =
   | "comparison"
   | "kpi"
   | "segments"
-  | "replay";
+  | "replay"
+  | "fleet";
 
 export type HarnessSkill = {
   id: HarnessSkillId;
@@ -87,6 +88,15 @@ export const HARNESS_SKILLS: readonly HarnessSkill[] = [
     optionalCapabilities: ["recordings"],
     sourceKind: "qualitative",
     observationTemplate: "{filter} 조건에 해당하는 세션 표본 {sampleCount}개가 확인되었습니다.",
+    available: false,
+  },
+  {
+    id: "fleet",
+    name: "함대 판독",
+    exampleQuestions: ["동시에 실험 중인 12개 변형 가운데 성공 기준을 넘은 변형은 무엇인가요?"],
+    requiredCapabilities: ["funnel", "segments"],
+    sourceKind: "calculated",
+    observationTemplate: "{variantCount}개 변형 중 {advancedCount}개가 성공 기준 이상, {culledCount}개가 컷 기준으로 관찰되었습니다.",
     available: false,
   },
 ];
