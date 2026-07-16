@@ -3,6 +3,7 @@ import type { ExperimentEvaluation, ExperimentEvaluationInput, ExperimentPlan, E
 import { evaluateExperiment } from "../../features/experiment/lib/evaluate-experiment.ts";
 import { analyzeFunnel } from "../../features/measure-loop/lib/calculate-funnel.ts";
 import { validateExperimentPlan } from "../../features/project-workflow/lib/project-workflow.ts";
+import { isFleetState } from "./fleet-schema.ts";
 import { MAX_TEXT_LENGTH, validateProductUrl } from "./input-policy.ts";
 import { isProjectStateConsistent } from "./project-invariants.ts";
 import {
@@ -266,7 +267,8 @@ function isProject(value: unknown): value is Project {
     && isNullable(value.hypothesis, isHypothesis)
     && isNullable(value.experiment, isExperiment)
     && isNullable(value.experimentResult, isResult)
-    && isNullable(value.decision, isDecision);
+    && isNullable(value.decision, isDecision)
+    && (value.fleet === undefined || isFleetState(value.fleet));
 }
 
 export function isWorkspaceState(value: unknown): value is WorkspaceState {

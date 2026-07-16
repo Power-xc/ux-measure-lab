@@ -34,10 +34,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// v1 → v2: 값을 변형하지 않고 schemaVersion만 승격한다. sourceRef 등 신규 필드는 전부 optional 가산이라
-// v1 데이터는 필드 부재로 그대로 유효하다. 미래 version(>2)은 승격 대상이 아니므로 이후 검증에서 거부된다.
+// v1·v2 → v3: 값을 변형하지 않고 schemaVersion만 승격한다. sourceRef(v2)·fleet(v3) 등 신규 필드는 전부
+// optional 가산이라 구버전 데이터는 필드 부재로 그대로 유효하다. 미래 version(>3)은 승격 대상이 아니므로 이후 검증에서 거부된다.
+const LEGACY_SCHEMA_VERSIONS: readonly unknown[] = [1, 2];
+
 function migrateRaw(value: unknown): unknown {
-  return isRecord(value) && value.schemaVersion === 1 ? { ...value, schemaVersion: WORKSPACE_SCHEMA_VERSION } : value;
+  return isRecord(value) && LEGACY_SCHEMA_VERSIONS.includes(value.schemaVersion)
+    ? { ...value, schemaVersion: WORKSPACE_SCHEMA_VERSION }
+    : value;
 }
 
 function parseWorkspace(text: string): WorkspaceResult {
@@ -58,17 +62,17 @@ function parseWorkspace(text: string): WorkspaceResult {
   return { ok: true, workspace: migrated };
 }
 
-function isV1Raw(raw: string): boolean {
+function isLegacyRaw(raw: string): boolean {
   try {
     const value: unknown = JSON.parse(raw);
-    return isRecord(value) && value.schemaVersion === 1;
+    return isRecord(value) && LEGACY_SCHEMA_VERSIONS.includes(value.schemaVersion);
   } catch {
     return false;
   }
 }
 
-// 마이그레이션 전 원본 raw를 백업 슬롯에 보존한 뒤에만 주 key를 v2로 승격한다.
-// 백업 쓰기가 실패하면 원본 v1이 주 key에 그대로 남아 손실이 없다.
+// 마이그레이션 전 원본 raw를 백업 슬롯에 보존한 뒤에만 주 key를 현재 version으로 승격한다.
+// 백업 쓰기가 실패하면 원본 구버전이 주 key에 그대로 남아 손실이 없다.
 function persistMigration(storage: StorageLike, originalRaw: string, migrated: WorkspaceState): void {
   try {
     storage.setItem(WORKSPACE_BACKUP_KEY, originalRaw);
@@ -91,7 +95,7 @@ export function loadWorkspace(storage: StorageLike): WorkspaceResult {
   }
   if (raw === null) return { ok: true, workspace: createEmptyWorkspace() };
   const result = parseWorkspace(raw);
-  if (result.ok && isV1Raw(raw)) persistMigration(storage, raw, result.workspace);
+  if (result.ok && isLegacyRaw(raw)) persistMigration(storage, raw, result.workspace);
   return result;
 }
 

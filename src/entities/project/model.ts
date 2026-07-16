@@ -1,8 +1,9 @@
 import type { Decision } from "../decision/model.ts";
 import type { ExperimentPlan, ExperimentResult } from "../experiment/model.ts";
+import type { FleetState } from "../fleet/model.ts";
 import type { FunnelStep } from "../measurement/model.ts";
 
-export const WORKSPACE_SCHEMA_VERSION = 2 as const;
+export const WORKSPACE_SCHEMA_VERSION = 3 as const;
 
 export type ProductStage = "idea" | "alpha" | "beta" | "live" | "growth";
 export type SourceKind = "measured" | "calculated" | "benchmark" | "assumed" | "inferred" | "qualitative";
@@ -102,6 +103,7 @@ export type Project = {
   experiment: ExperimentPlan | null;
   experimentResult: ExperimentResult | null;
   decision: Decision | null;
+  fleet?: FleetState; // 신규·선택. 실험 단계의 다변형 확장에서만 채워진다.
 };
 
 export type WorkspaceState = {

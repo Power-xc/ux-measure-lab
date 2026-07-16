@@ -49,7 +49,7 @@ function harnessEvidence(): Evidence {
 
 test("HAC-10 standalone harness Evidence remains consistent and persists", () => {
   const project = applyHarnessEvidence(emptyProject(), [harnessEvidence()], "2026-07-15T01:00:00.000Z");
-  const workspace: WorkspaceState = { schemaVersion: 2, activeProjectId: project.id, projects: [project] };
+  const workspace: WorkspaceState = { schemaVersion: 3, activeProjectId: project.id, projects: [project] };
   const storage = new MemoryStorage();
 
   assert.equal(isProjectStateConsistent(project), true);

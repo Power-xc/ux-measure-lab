@@ -10,6 +10,7 @@ import {
   importWorkspace,
   loadWorkspace,
   saveWorkspace,
+  WORKSPACE_BACKUP_KEY,
   WORKSPACE_STORAGE_KEY,
   type StorageLike,
 } from "./project-repository.ts";
@@ -166,7 +167,7 @@ test("STORAGE-003 validates exported JSON before import", () => {
   assert.equal(roundTrip.ok, true);
   assert.deepEqual(roundTrip.workspace, workspace);
 
-  const wrongVersion = importWorkspace('{"schemaVersion":3,"activeProjectId":null,"projects":[]}');
+  const wrongVersion = importWorkspace('{"schemaVersion":4,"activeProjectId":null,"projects":[]}');
   assert.equal(wrongVersion.ok, false);
   assert.equal(wrongVersion.error.code, "unsupported_version");
 
@@ -274,4 +275,20 @@ test("STORAGE-009 preserves project identity during replacement", () => {
   const updated = replaceProject(workspace, "p1", { ...workspace.projects[0], name: "Updated" });
   assert.equal(updated.projects[0].id, "p1");
   assert.equal(updated.projects[0].name, "Updated");
+});
+
+test("STORAGE-010 migrates legacy v1 and v2 data losslessly after backing up the original", () => {
+  const workspace = createProject(createEmptyWorkspace(), { id: "p1", name: "First", now: "2026-07-14T00:00:00.000Z", context });
+  for (const legacyVersion of [1, 2]) {
+    const storage = new MemoryStorage();
+    const legacyRaw = JSON.stringify({ ...workspace, schemaVersion: legacyVersion });
+    storage.values.set(WORKSPACE_STORAGE_KEY, legacyRaw);
+
+    const loaded = loadWorkspace(storage);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.workspace.schemaVersion, 3);
+    assert.deepEqual(loaded.workspace.projects, workspace.projects);
+    assert.equal(storage.getItem(WORKSPACE_BACKUP_KEY), legacyRaw);
+    assert.match(storage.getItem(WORKSPACE_STORAGE_KEY) ?? "", /"schemaVersion":3/);
+  }
 });
