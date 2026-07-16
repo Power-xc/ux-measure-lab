@@ -1,6 +1,8 @@
 import type { Decision } from "../../../entities/decision/model.ts";
 import type { ExperimentPlan, ExperimentResult, GuardrailInput, RateCount } from "../../../entities/experiment/model.ts";
+import type { FleetPlan, FleetWaveRecord } from "../../../entities/fleet/model.ts";
 import type { Evidence, FunnelImport, Hypothesis, MetricDefinition, Project, ProjectContext } from "../../../entities/project/model.ts";
+import { validateFleetPlan } from "../../experiment-fleet/lib/validate-fleet-plan.ts";
 
 function sameRateCount(left: RateCount, right: RateCount): boolean {
   return left.converted === right.converted && left.total === right.total;
@@ -167,4 +169,46 @@ export function applyDecision(project: Project, decision: Decision, now: string)
     decision,
     experiment: project.experiment ? { ...project.experiment, status: "decided" } : null,
   });
+}
+
+export function fleetPlanChanged(left: FleetPlan | undefined, right: FleetPlan): boolean {
+  if (!left) return true;
+  const policies = Object.entries(right.policy) as [keyof FleetPlan["policy"], number | string][];
+  if (policies.some(([key, value]) => left.policy[key] !== value)) return true;
+  if (left.primaryMetricId !== right.primaryMetricId || left.variants.length !== right.variants.length) return true;
+  return left.variants.some((variant, index) => {
+    const next = right.variants[index];
+    return !next
+      || variant.id !== next.id
+      || variant.name !== next.name
+      || variant.changeDescription !== next.changeDescription
+      || variant.origin !== next.origin
+      || !sameStrings(variant.relatedEvidenceIds, next.relatedEvidenceIds);
+  });
+}
+
+export function applyFleetPlan(project: Project, plan: FleetPlan, now: string): Project {
+  if (project.metric?.status !== "confirmed" || project.hypothesis?.status !== "ready") {
+    throw new RangeError("확정된 KPI와 ready 가설이 있어야 함대를 사전 등록할 수 있습니다.");
+  }
+  if (plan.primaryMetricId !== project.metric.id) {
+    throw new RangeError("함대의 주 지표는 확정된 KPI여야 합니다.");
+  }
+  validateFleetPlan(plan);
+  // 사전 등록이 실제로 바뀌면 기존 웨이브 판정은 무효다. 정책 아래에서만 이력이 의미를 가진다.
+  if (!fleetPlanChanged(project.fleet?.plan, plan)) {
+    return touch(project, now, { fleet: { plan, waves: project.fleet?.waves ?? [] } });
+  }
+  return touch(project, now, { fleet: { plan, waves: [] } });
+}
+
+export function applyFleetWave(project: Project, record: FleetWaveRecord, now: string): Project {
+  const fleet = project.fleet;
+  if (!fleet) throw new RangeError("함대를 사전 등록한 뒤 웨이브를 기록할 수 있습니다.");
+  const expectedWave = fleet.waves.length + 1;
+  const expectedUsedBefore = fleet.waves.reduce((sum, wave) => sum + wave.result.sampleUsed, 0);
+  if (record.input.wave !== expectedWave || record.input.sampleUsedBefore !== expectedUsedBefore) {
+    throw new RangeError("웨이브 번호와 사용 표본은 직전 웨이브에서 이어져야 합니다.");
+  }
+  return touch(project, now, { fleet: { plan: fleet.plan, waves: [...fleet.waves, record] } });
 }

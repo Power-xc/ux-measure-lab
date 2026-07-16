@@ -4,8 +4,10 @@ import type { Decision } from "../../../entities/decision/model.ts";
 import type { ExperimentPlan } from "../../../entities/experiment/model.ts";
 import type { MetricDefinition, Project } from "../../../entities/project/model.ts";
 import { createProject } from "../../../entities/project/model.ts";
+import type { FleetPlan } from "../../../entities/fleet/model.ts";
 import { buildDiagnosisFromFunnel } from "../../diagnosis/lib/build-diagnosis.ts";
 import { evaluateExperiment } from "../../experiment/lib/evaluate-experiment.ts";
+import { evaluateFleetWave } from "../../experiment-fleet/lib/evaluate-fleet-wave.ts";
 import { parseFunnelCsv } from "../../funnel-import/lib/parse-funnel-csv.ts";
 import { analyzeFunnel } from "../../measure-loop/lib/calculate-funnel.ts";
 import { buildExperimentReport } from "../../report/lib/build-experiment-report.ts";
@@ -115,6 +117,52 @@ test("FLOW-001 completes the five-step golden scenario without AI", () => {
   assert.match(report.markdown, /System recommendation/);
   assert.match(report.markdown, /Human decision/);
   assert.match(report.markdown, /dogfood\.csv/);
+  assert.doesNotMatch(report.markdown, /Experiment fleet/);
+
+  const fleetPlan: FleetPlan = {
+    id: "fleet-1",
+    name: "Dogfood 함대",
+    primaryMetricId: metric.id,
+    policy: {
+      successThresholdPp: 2,
+      failureThresholdPp: 0,
+      minimumSampleSizePerVariant: 200,
+      plannedDaysPerWave: 7,
+      maxActiveVariants: 4,
+      keepShare: 0.5,
+      sampleBudget: 10000,
+      guardrailMetricName: "연동 오류율",
+      maxGuardrailIncreasePp: 1,
+      stopRule: "웨이브 3회 완료 또는 예산 소진 시 종료",
+    },
+    variants: ["v-a", "v-b"].map((id) => ({
+      id,
+      name: `변형 ${id}`,
+      changeDescription: "가입 진입 문구 변경",
+      origin: "human" as const,
+      relatedEvidenceIds: [],
+      status: "active" as const,
+    })),
+    status: "running",
+  };
+  const waveInput = {
+    wave: 1,
+    baseline: { converted: 200, total: 1000 },
+    observations: [
+      { variantId: "v-a", variant: { converted: 96, total: 400 }, observedDays: 7 },
+      { variantId: "v-b", variant: { converted: 88, total: 400 }, observedDays: 7 },
+    ],
+    sampleUsedBefore: 0,
+  };
+  const fleetProject: Project = {
+    ...project,
+    fleet: { plan: fleetPlan, waves: [{ recordedAt: now, input: waveInput, result: evaluateFleetWave({ ...waveInput, plan: fleetPlan }) }] },
+  };
+  const fleetReport = buildExperimentReport(fleetProject);
+  assert.equal(fleetReport.ok, true);
+  assert.match(fleetReport.markdown, /## Experiment fleet/);
+  assert.match(fleetReport.markdown, /Wave 1: 승급 1 · 컷 1 · 재수집 0 · 승격 후보 변형 v-a/);
+  assert.match(fleetReport.markdown, /보정 없는 다중 비교/);
 
   const hostileReport = buildExperimentReport({
     ...project,

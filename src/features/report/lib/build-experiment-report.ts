@@ -1,3 +1,4 @@
+import type { FleetState } from "../../../entities/fleet/model.ts";
 import type { Project } from "../../../entities/project/model.ts";
 import { isProjectStateConsistent } from "../../../shared/lib/project-invariants.ts";
 
@@ -26,6 +27,26 @@ function markdownText(value: string): string {
     return `\\${inlineSafe}`;
   }
   return inlineSafe;
+}
+
+// 웨이브가 없는 함대는 리포트에 결론이 없으므로 싣지 않는다.
+function fleetSection(fleet: FleetState | undefined): string[] {
+  if (!fleet || fleet.waves.length === 0) return [];
+  const policy = fleet.plan.policy;
+  const names = new Map(fleet.plan.variants.map((variant) => [variant.id, variant.name]));
+  const waves = fleet.waves.map((record) => {
+    const candidate = record.result.promotionCandidateId;
+    const candidateLabel = candidate ? markdownText(names.get(candidate) ?? candidate) : "없음";
+    return `- Wave ${record.input.wave}: 승급 ${record.result.advanced.length} · 컷 ${record.result.culled.length} · 재수집 ${record.result.needsSample.length} · 승격 후보 ${candidateLabel} · 잔여 예산 ${record.result.sampleBudgetRemaining.toLocaleString("ko-KR")}`;
+  });
+  return [
+    "## Experiment fleet",
+    `- Variants: ${fleet.plan.variants.length} · Success: +${policy.successThresholdPp}pp · Keep share: ${policy.keepShare} · Max active: ${policy.maxActiveVariants} · Budget: ${policy.sampleBudget.toLocaleString("ko-KR")}`,
+    `- Guardrail: ${markdownText(policy.guardrailMetricName)} +${policy.maxGuardrailIncreasePp}pp 이하`,
+    ...waves,
+    "- 주의: 웨이브 판정은 보정 없는 다중 비교이며, 개별 변형의 기준 충족은 후보 선별 신호입니다.",
+    "",
+  ];
 }
 
 export function buildExperimentReport(project: Project): ReportResult {
@@ -82,6 +103,7 @@ export function buildExperimentReport(project: Project): ReportResult {
     `- Guardrail: ${evaluation.guardrailOutcome}`,
     `- Deterministic verdict: ${evaluation.verdict}`,
     "",
+    ...fleetSection(project.fleet),
     "## Decision",
     `- System recommendation: ${markdownText(decision.aiRecommendation)}`,
     `- Human decision: ${decision.humanDecision}`,

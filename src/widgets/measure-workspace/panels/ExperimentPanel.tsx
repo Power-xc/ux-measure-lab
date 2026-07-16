@@ -2,15 +2,19 @@
 
 import { type FormEvent, useState } from "react";
 import type { ExperimentPlan } from "../../../entities/experiment/model";
+import type { FleetPlan, FleetWaveRecord } from "../../../entities/fleet/model";
 import type { Project } from "../../../entities/project/model";
 import { MAX_TEXT_LENGTH } from "../../../shared/lib/input-policy";
 import { validateExperimentPlan } from "../../../features/project-workflow/lib/project-workflow";
+import { FleetSection } from "./FleetSection";
 import { ErrorSummary, Field, LockedPanel, PanelHeader } from "./PanelPrimitives";
 import styles from "./panels.module.css";
 
 type ExperimentPanelProps = {
   project: Project;
   onSave(experiment: ExperimentPlan): boolean;
+  onSaveFleetPlan(plan: FleetPlan): boolean;
+  onRecordFleetWave(record: FleetWaveRecord): boolean;
   onBack(): void;
   onNext(): void;
 };
@@ -70,6 +74,7 @@ export function ExperimentPanel(props: ExperimentPanelProps) {
         <Field htmlFor="stop-rule" label="종료 규칙"><textarea id="stop-rule" maxLength={MAX_TEXT_LENGTH} onChange={(event) => set("stopRule", event.target.value)} rows={2} value={form.stopRule} /></Field>
         <div className={styles.formActions}><button className={styles.secondaryButton} onClick={props.onBack} type="button">← Hypothesis</button><button className={styles.primaryButton} type="submit">실험 사전 등록</button><button className={styles.secondaryButton} disabled={!registered} onClick={props.onNext} type="button">결과 입력하기 →</button></div>
       </form>
+      <FleetSection onRecordWave={props.onRecordFleetWave} onSavePlan={props.onSaveFleetPlan} project={props.project} />
     </section>
   );
 }
