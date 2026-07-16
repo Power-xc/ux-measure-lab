@@ -1,7 +1,7 @@
 # Experiment Fleet — 실행 계획
 
 > **작성일:** 2026-07-16
-> **상태:** Wave 0·1 구현 완료 · Wave 2+ 사용자 검토 대기
+> **상태:** Wave 0·1·2 구현 완료 · Wave 3 사용자 검토 대기
 > **전제:** [spec.md](spec.md)의 불변 조건·계약 결정·AC를 따른다.
 
 ## Wave 0 — 결정적 함대 엔진 (완료)
@@ -55,14 +55,34 @@ e2e/fleet.spec.ts                                 함대 golden loop
 
 검증: typecheck·lint·`npm test` 191/191·build·E2E 9/9 green.
 
-## Wave 2 — harness 연동 (검토 대기)
+## Wave 2 — harness 연동 (완료)
 
-- [ ] `MeasurementQuery`에 함대 관찰 쿼리(변형 dimension) 추가 또는 segments 쿼리 재사용 결정.
-- [ ] first-party 어댑터에서 변형별 RateCount 집계 → `FleetVariantObservation` 정규화.
-- [ ] `fleet` 스킬 `available: true` 전환 + 계약 테스트.
-- [ ] 영구 holdout과 승격 후보 확정 웨이브(신규 표본) 설계 — 승자의 저주 완화 (research.md §6).
+영향 파일:
 
-## Wave 3 — AI 변형 후보 생성 (검토 대기)
+```text
+src/features/harness/server/aggregate-reader.ts            segmentedFunnelCounts 계약 + in-memory 구현
+src/features/harness/server/measure-segments.ts             변형별 퍼널 정규화 (미달 변형은 결손 통지)
+src/features/harness/server/measure-service.ts               segments 라우팅 + provenance 검증 확장
+src/features/harness/server/supabase-aggregate-reader.ts    segmented_funnel_counts RPC 호출·행 재조립
+supabase/migrations/0003_segmented_funnel.sql                변형별 퍼널 RPC (첫 배정 기준)
+src/features/harness/server/first-party-adapter.ts           segments capability 선언
+src/features/harness/adapters/http-client.ts                 클라이언트 어댑터 capability 정렬
+src/features/harness/catalog.ts                              fleet 스킬 available 전환
+src/features/experiment-fleet/lib/wave-prefill.ts            측정 → 웨이브 관찰 변환 (위조·결손 거부)
+src/widgets/measure-workspace/panels/FleetWaveForm.tsx       측정에서 채우기 (guardrail은 수동 유지)
+src/widgets/measure-workspace/panels/HarnessEvidenceSection.tsx  함대 판독 질문 유형
+```
+
+- [x] `segments` 쿼리 재사용 확정 — 변형 배정은 이벤트 props의 dimension 키(기본 `variant`), 기준선은 `baseline` 값 관례.
+- [x] first-party 어댑터의 변형별 집계: RPC는 방문자를 첫 배정 값에 귀속, 표본 30 미만 변형은 결손(degraded)으로 통지 (FAC-13).
+- [x] `fleet` 스킬 `available: true` 전환 + 계약·카탈로그 테스트.
+- [x] 웨이브 프리필: 측정에 없는 변형·기준선은 실패로 알리고 값을 위조하지 않는다 (FAC-14). guardrail 수치는 수동 입력 유지.
+- [x] 영구 holdout과 승격 확정 웨이브 설계 확정 — spec §8, 구현은 Wave 3.
+
+검증: typecheck·lint·`npm test` 199/199·build·E2E 9/9(프리필 흐름 포함) green.
+
+## Wave 3 — AI 변형 후보 생성 + holdout·확정 웨이브 (검토 대기)
 
 - [ ] 기존 AI trust boundary 규칙 재사용: evidence ID 참조만 허용, 수치 생성 금지, 결정적 fallback.
 - [ ] 후보 상한(D-203)과 사람 검토 큐: 후보는 검토·적용 전 함대에 등록되지 않는다.
+- [ ] spec §8 구현: `holdoutShare` 정책 필드와 승격 확정 웨이브(신규 표본, 실패 시 강등).

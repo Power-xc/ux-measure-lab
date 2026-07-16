@@ -63,7 +63,7 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 - **업계 관행의 결정적 채택** — GrowthBook·PostHog·Eppo가 쓰는 최소 노출 게이트와 guardrail 마진 컷은 같은 구조로 구현했고, SRM 통계 검정은 결정적 배분 이상 경고로 대체했습니다.
 - **위조 불가능한 이력** — 함대 판정은 웨이브 입력과 함께 저장되고, 백업 복원 시 전부 재계산해 대조합니다. 일치하지 않는 판정은 거부됩니다.
 
-워크스페이스에서는 실험 단계 안의 **함대 모드**로 사용합니다: 변형 목록과 정책을 사전 등록하고, 웨이브 관찰을 입력하면 판정 테이블과 다음 웨이브 배분(또는 수렴·소진 중단 사유)이 표시됩니다. 배경 리서치와 채택·거부 근거는 [Experiment Fleet Research](features/experiment-fleet/research.md)와 [ADR-0002](docs/adrs/0002-experiment-fleet.md)에 정리되어 있습니다.
+워크스페이스에서는 실험 단계 안의 **함대 모드**로 사용합니다: 변형 목록과 정책을 사전 등록하고, 웨이브 관찰을 입력하면 판정 테이블과 다음 웨이브 배분(또는 수렴·소진 중단 사유)이 표시됩니다. first-party 수집을 쓰면 웨이브 관찰을 손으로 옮길 필요가 없습니다 — 이벤트 속성의 변형 배정 키로 변형별 전환이 자동 집계되어 웨이브 폼에 채워집니다(함대 판독 측정 스킬). 배경 리서치와 채택·거부 근거는 [Experiment Fleet Research](features/experiment-fleet/research.md)와 [ADR-0002](docs/adrs/0002-experiment-fleet.md)에 정리되어 있습니다.
 
 ## 방향
 
@@ -75,9 +75,9 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 | Source adapter 계약 | 모든 행동 데이터 소스를 동일한 evidence 스키마로 정규화하는 인터페이스 | **구현** |
 | First-party SDK | 스크립트 한 줄로 페이지뷰·클릭·rage/dead click·스크롤·세션 수집 | **구현** · 실수집은 사이트 프로비저닝 후 |
 | Ingest 서버 | 자체 이벤트 수신, 세션화, 90일 보존 | **구현** · Supabase/Upstash 연결 대기 |
-| Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성 측정이 구성 | **구현** (스킬 3종) |
+| Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성·함대 판독 측정이 구성 | **구현** (스킬 4종) |
 | External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
-| Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하는 결정적 엔진과 워크스페이스 통합 | **구현** · harness 자동 수집 연동 로드맵 |
+| Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하는 결정적 엔진, 워크스페이스 통합과 harness 변형별 측정 연동 | **구현** · holdout·확정 웨이브 로드맵 |
 | Session replay | 사전 동의, 기본 마스킹, 짧은 보존을 전제로 한 세션 녹화 | spec 확정 · 로드맵 |
 
 상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
@@ -95,7 +95,7 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 | 실험 사전 등록과 Before/After·guardrail 판정 | 구현 |
 | Human Decision·Markdown 리포트 | 구현 |
 | Playwright E2E — 8단계 루프·복구·키보드·모바일·harness·fleet | 구현 |
-| 질문 → 측정 → Evidence 적용 (퍼널 이탈·마찰 신호·여정 연속성) | 구현 |
+| 질문 → 측정 → Evidence 적용 (퍼널 이탈·마찰 신호·여정 연속성·함대 판독) | 구현 |
 | First-party SDK와 ingest 파이프라인 (동의 게이트·마스킹 기본) | 구현, 실수집은 프로비저닝 후 |
 | PostHog read-only 어댑터 | 구현, 실계정 검증 대기 |
 | Experiment fleet — 함대 사전 등록·웨이브 컷·배분·노출 불균형 경고·워크스페이스 UI·리포트 | 구현 |
@@ -165,7 +165,7 @@ npm audit --omit=dev
 npm run test:e2e
 ```
 
-단위 테스트 191개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·스키마 재계산 검증)을 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 9종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 함대 웨이브 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 199개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·스키마 재계산 검증·변형별 측정·웨이브 프리필)을 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 9종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필 기반 함대 웨이브 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 

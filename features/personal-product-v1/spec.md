@@ -4,7 +4,7 @@
 > **상태:** Personal Product v1 구현·검증 완료
 > **근거:** 사용자 요청, `features/product-foundation/spec.md`, 현재 실행형 prototype 감사
 
-## 1. 목표
+## 1. 목적과 목표
 
 UX MeasureLab을 고정 fixture 데모가 아니라 개인 프로젝트에서 반복 사용할 수 있는 local-first 제품으로 완성한다. 제품 맥락과 행동 데이터를 KPI, UX 마찰 후보, 검증 가능한 가설, 실험, 결과 판정, 사람의 최종 결정으로 연결한다.
 
