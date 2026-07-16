@@ -14,10 +14,13 @@ import type {
 } from "../../entities/project/model";
 import { getProjectProgress, type WorkflowSection } from "../../features/project-workflow/lib/project-workflow";
 import { useWorkspace } from "../../features/project-workflow/model/use-workspace";
+import type { FleetPlan, FleetWaveRecord } from "../../entities/fleet/model";
 import {
   applyContext,
   applyDecision,
   applyExperiment,
+  applyFleetPlan,
+  applyFleetWave,
   applyFunnel,
   applyHarnessEvidence,
   applyHypothesis,
@@ -25,6 +28,7 @@ import {
   applyResult,
   contextChanged,
   experimentChanged,
+  fleetPlanChanged,
   funnelChanged,
   hypothesisChanged,
   metricChanged,
@@ -166,6 +170,20 @@ export function MeasureWorkspace() {
     return update((current) => applyExperiment(current, experiment, new Date().toISOString()));
   }
 
+  function saveFleetPlan(plan: FleetPlan): boolean {
+    const allowed = confirmReset(
+      fleetPlanChanged(activeProject.fleet?.plan, plan),
+      (activeProject.fleet?.waves.length ?? 0) > 0,
+      "함대 사전 등록을 변경하면 기존 웨이브 판정 이력이 초기화됩니다. 계속할까요?",
+    );
+    if (!allowed) return false;
+    return update((current) => applyFleetPlan(current, plan, new Date().toISOString()));
+  }
+
+  function recordFleetWave(record: FleetWaveRecord): boolean {
+    return update((current) => applyFleetWave(current, record, new Date().toISOString()));
+  }
+
   function saveResult(experimentResult: ExperimentResult): boolean {
     const allowed = confirmReset(
       resultChanged(activeProject.experimentResult, experimentResult),
@@ -195,7 +213,7 @@ export function MeasureWorkspace() {
     funnel: <FunnelPanel key={`${panelKey}:funnel`} onBack={() => selectSection("metric")} onNext={() => selectSection("diagnosis")} onSave={saveFunnel} project={activeProject} />,
     diagnosis: <DiagnosisPanel key={`${panelKey}:diagnosis`} onApplyEvidence={saveHarnessEvidence} onBack={() => selectSection("funnel")} onNext={() => selectSection("hypothesis")} onSave={saveDiagnosis} project={activeProject} />,
     hypothesis: <HypothesisPanel key={`${panelKey}:hypothesis`} onBack={() => selectSection("diagnosis")} onNext={() => selectSection("experiment")} onSave={saveHypothesis} project={activeProject} />,
-    experiment: <ExperimentPanel key={`${panelKey}:experiment`} onBack={() => selectSection("hypothesis")} onNext={() => selectSection("result")} onSave={saveExperiment} project={activeProject} />,
+    experiment: <ExperimentPanel key={`${panelKey}:experiment`} onBack={() => selectSection("hypothesis")} onNext={() => selectSection("result")} onRecordFleetWave={recordFleetWave} onSave={saveExperiment} onSaveFleetPlan={saveFleetPlan} project={activeProject} />,
     result: <ValidationPanel key={`${panelKey}:result`} onBack={() => selectSection("experiment")} onNext={() => selectSection("decision")} onSave={saveResult} project={activeProject} />,
     decision: <DecisionPanel key={`${panelKey}:decision`} onBack={() => selectSection("result")} onSave={saveDecision} project={activeProject} />,
   };
