@@ -25,6 +25,9 @@ function validateWaveShape(input: FleetWaveInput): void {
   if (input.observations.length === 0) {
     throw new FleetValidationError("웨이브에는 1개 이상의 변형 관찰이 필요합니다.");
   }
+  if (input.confirmation && input.observations.length !== 1) {
+    throw new FleetValidationError("승격 확정 웨이브는 승격 후보 1개만 관찰합니다.");
+  }
   const registered = new Set(input.plan.variants.map((variant) => variant.id));
   const seen = new Set<string>();
   for (const observation of input.observations) {

@@ -92,6 +92,25 @@ test("FLEET-PLAN-005 rejects inverted thresholds and negative guardrail allowanc
   );
 });
 
+test("FLEET-PLAN-007 validates the holdout share and reserves its budget", () => {
+  assert.throws(
+    () => validateFleetPlan(makePlan({ policy: makePolicy({ holdoutShare: 0.6 }) })),
+    FleetValidationError,
+  );
+  assert.throws(
+    () => validateFleetPlan(makePlan({ policy: makePolicy({ holdoutShare: 0 }) })),
+    FleetValidationError,
+  );
+  // 변형 3 + 기준선 = 800 필요. holdout 0.5는 예산 1500에서 750을 예약해 첫 웨이브를 못 채운다.
+  assert.throws(
+    () => validateFleetPlan(makePlan({ policy: makePolicy({ holdoutShare: 0.5, sampleBudget: 1500 }) })),
+    FleetValidationError,
+  );
+  assert.doesNotThrow(
+    () => validateFleetPlan(makePlan({ policy: makePolicy({ holdoutShare: 0.5, sampleBudget: 1600 }) })),
+  );
+});
+
 test("FLEET-PLAN-006 rejects blank identity and policy text fields", () => {
   assert.throws(() => validateFleetPlan(makePlan({ primaryMetricId: " " })), FleetValidationError);
   assert.throws(

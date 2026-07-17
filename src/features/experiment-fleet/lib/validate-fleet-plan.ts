@@ -41,14 +41,23 @@ function validateAllocation(policy: FleetPolicy): void {
   if (!Number.isFinite(policy.keepShare) || policy.keepShare <= 0 || policy.keepShare > 1) {
     throw new FleetValidationError("생존 비율은 0 초과 1 이하여야 합니다.");
   }
+  if (policy.holdoutShare !== undefined
+    && (!Number.isFinite(policy.holdoutShare) || policy.holdoutShare <= 0 || policy.holdoutShare > 0.5)) {
+    throw new FleetValidationError("Holdout 비율은 0 초과 0.5 이하여야 합니다.");
+  }
+}
+
+// holdout으로 예약된 몫은 어떤 변형에도 배정되지 않으므로 배분 가능한 예산에서 제외한다.
+export function holdoutReserve(policy: FleetPolicy): number {
+  return policy.holdoutShare ? Math.ceil(policy.sampleBudget * policy.holdoutShare) : 0;
 }
 
 // 첫 웨이브(기준선 1개 + 동시 변형)를 최소 표본으로 채우지 못하는 예산은 사전 등록 단계에서 거부한다.
 function validateBudget(policy: FleetPolicy, variantCount: number): void {
   const firstWaveArms = Math.min(policy.maxActiveVariants, variantCount) + 1;
   const minimumBudget = firstWaveArms * policy.minimumSampleSizePerVariant;
-  if (policy.sampleBudget < minimumBudget) {
-    throw new FleetValidationError(`표본 예산은 첫 웨이브를 감당할 수 있는 ${minimumBudget} 이상이어야 합니다.`);
+  if (policy.sampleBudget - holdoutReserve(policy) < minimumBudget) {
+    throw new FleetValidationError(`표본 예산은 holdout 몫을 제외하고 첫 웨이브를 감당할 수 있는 ${minimumBudget} 이상이어야 합니다.`);
   }
 }
 
