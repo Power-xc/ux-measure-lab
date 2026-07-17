@@ -23,6 +23,7 @@ type FleetWaveFormProps = {
   sampleUsedBefore: number;
   activeVariantIds: string[];
   funnelStepIds: string[];
+  confirmation: boolean;
   onRecord(record: FleetWaveRecord): boolean;
 };
 
@@ -133,6 +134,7 @@ export function FleetWaveForm(props: FleetWaveFormProps) {
       guardrailBaseline,
       observations,
       sampleUsedBefore: props.sampleUsedBefore,
+      ...(props.confirmation ? { confirmation: true } : {}),
     };
     try {
       const result = evaluateFleetWave({ ...input, plan: props.plan });
@@ -146,6 +148,9 @@ export function FleetWaveForm(props: FleetWaveFormProps) {
   return (
     <form className={styles.form} onSubmit={submit}>
       <ErrorSummary errors={errors} />
+      {props.confirmation ? (
+        <p className={styles.observationNote} role="status">승격 확정 웨이브 — 승격 후보를 신규 표본으로 재검증합니다. 순위 선택에 쓴 표본과 분리해 승자의 저주를 완화합니다.</p>
+      ) : null}
       {props.funnelStepIds.length >= 2 ? (
         <details className={styles.resultEditor}>
           <summary>측정에서 채우기 — first-party 변형별 관찰</summary>

@@ -7,6 +7,7 @@ import { planNextWave } from "../../../features/experiment-fleet/lib/plan-next-w
 import { FleetValidationError, validateFleetPlan } from "../../../features/experiment-fleet/lib/validate-fleet-plan";
 import { MAX_TEXT_LENGTH } from "../../../shared/lib/input-policy";
 import { ErrorSummary, Field } from "./PanelPrimitives";
+import { FleetCandidateAssist } from "./FleetCandidateAssist";
 import { FleetWaveForm } from "./FleetWaveForm";
 import styles from "./panels.module.css";
 
@@ -24,6 +25,7 @@ type PlanForm = {
   maxActiveVariants: number;
   keepShare: number;
   sampleBudget: number;
+  holdoutShare: number; // 0이면 holdout 없음
   guardrailMetricName: string;
   maxGuardrailIncreasePp: number;
   stopRule: string;
@@ -38,9 +40,10 @@ const VERDICT_LABELS = {
   insufficient_evidence: "근거 부족",
 } as const;
 const STOP_LABELS = {
-  converged: "함대가 수렴했습니다. 승격 후보를 검토하고 사람의 결정을 기록하세요.",
   no_survivors: "생존 변형이 없습니다. 가설 공간을 다시 설계하세요.",
   budget_exhausted: "표본 예산이 소진되었습니다. 지금까지의 순위로 사람의 결정을 기록하세요.",
+  confirmed: "승격 확정 — 후보가 신규 표본의 확정 웨이브를 통과했습니다. 사람의 결정을 기록하세요.",
+  confirmation_failed: "확정 실패 — 승격 후보가 신규 표본에서 기준을 충족하지 못해 강등되었습니다. 사람의 결정을 기록하세요.",
 } as const;
 
 function initialPlanForm(project: Project): PlanForm {
@@ -53,9 +56,10 @@ function initialPlanForm(project: Project): PlanForm {
     maxActiveVariants: plan?.policy.maxActiveVariants ?? 4,
     keepShare: plan?.policy.keepShare ?? 0.5,
     sampleBudget: plan?.policy.sampleBudget ?? 10000,
+    holdoutShare: plan?.policy.holdoutShare ?? 0,
     guardrailMetricName: plan?.policy.guardrailMetricName ?? project.hypothesis?.guardrailMetric ?? "",
     maxGuardrailIncreasePp: plan?.policy.maxGuardrailIncreasePp ?? 0.5,
-    stopRule: plan?.policy.stopRule ?? "웨이브 3회 완료 또는 예산 소진 시 종료",
+    stopRule: plan?.policy.stopRule ?? "수렴 후 확정 웨이브 1회 통과 시 종료",
     variantsText: plan ? plan.variants.map((variant) => `${variant.name} | ${variant.changeDescription}`).join("\n") : "",
   };
 }
@@ -86,12 +90,12 @@ export function FleetSection(props: FleetSectionProps) {
 
   function submitPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const { variantsText, ...policy } = form;
+    const { variantsText, holdoutShare, ...policy } = form;
     const plan: FleetPlan = {
       id: fleet?.plan.id ?? crypto.randomUUID(),
       name: `${props.project.name} 함대`,
       primaryMetricId: props.project.metric?.id ?? "",
-      policy,
+      policy: holdoutShare > 0 ? { ...policy, holdoutShare } : policy,
       variants: parseVariants(variantsText),
       status: "running",
     };
@@ -109,8 +113,8 @@ export function FleetSection(props: FleetSectionProps) {
   const lastWave = fleet && fleet.waves.length > 0 ? fleet.waves[fleet.waves.length - 1] : null;
   const nextWave: NextWaveDecision | null = fleet
     ? lastWave
-      ? planNextWave({ plan: fleet.plan, lastWave: lastWave.result })
-      : { proceed: true, wave: 1, activeVariantIds: fleet.plan.variants.slice(0, fleet.plan.policy.maxActiveVariants).map((variant) => variant.id), perVariantSampleTarget: 0 }
+      ? planNextWave({ plan: fleet.plan, lastWave: lastWave.result, lastWaveConfirmation: lastWave.input.confirmation === true })
+      : { proceed: true, wave: 1, activeVariantIds: fleet.plan.variants.slice(0, fleet.plan.policy.maxActiveVariants).map((variant) => variant.id), perVariantSampleTarget: 0, confirmation: false }
     : null;
   const names = fleet ? new Map(fleet.plan.variants.map((variant) => [variant.id, variant.name])) : new Map<string, string>();
 
@@ -118,6 +122,7 @@ export function FleetSection(props: FleetSectionProps) {
     <form className={styles.form} onSubmit={submitPlan}>
       <ErrorSummary errors={errors} />
       <Field helper="한 줄에 하나 — 「이름 | 변경 내용」" htmlFor="fleet-variants" label="변형 목록"><textarea id="fleet-variants" maxLength={MAX_TEXT_LENGTH} onChange={(event) => set("variantsText", event.target.value)} rows={4} value={form.variantsText} /></Field>
+      <FleetCandidateAssist onAdd={(line) => set("variantsText", form.variantsText ? `${form.variantsText}\n${line}` : line)} project={props.project} />
       <div className={styles.threeColumns}>
         <Field helper="pp · 함대 공통" htmlFor="fleet-success" label="성공 임계값"><input id="fleet-success" min="0" onChange={(event) => set("successThresholdPp", Number(event.target.value))} step="0.1" type="number" value={form.successThresholdPp} /></Field>
         <Field helper="pp" htmlFor="fleet-failure" label="실패 임계값"><input id="fleet-failure" onChange={(event) => set("failureThresholdPp", Number(event.target.value))} step="0.1" type="number" value={form.failureThresholdPp} /></Field>
@@ -133,6 +138,7 @@ export function FleetSection(props: FleetSectionProps) {
         <Field htmlFor="fleet-guardrail-name" label="함대 guardrail 지표"><input id="fleet-guardrail-name" maxLength={MAX_TEXT_LENGTH} onChange={(event) => set("guardrailMetricName", event.target.value)} value={form.guardrailMetricName} /></Field>
         <Field helper="pp" htmlFor="fleet-guardrail-max" label="함대 guardrail 허용 증가"><input id="fleet-guardrail-max" min="0" onChange={(event) => set("maxGuardrailIncreasePp", Number(event.target.value))} step="0.1" type="number" value={form.maxGuardrailIncreasePp} /></Field>
       </div>
+      <Field helper="0이면 없음 · 최대 0.5 — 모든 변경에서 제외해 누적 효과를 관찰" htmlFor="fleet-holdout" label="Holdout 비율" required={false}><input id="fleet-holdout" max="0.5" min="0" onChange={(event) => set("holdoutShare", Number(event.target.value))} step="0.05" type="number" value={form.holdoutShare} /></Field>
       <Field htmlFor="fleet-stop-rule" label="함대 중단 규칙"><textarea id="fleet-stop-rule" maxLength={MAX_TEXT_LENGTH} onChange={(event) => set("stopRule", event.target.value)} rows={2} value={form.stopRule} /></Field>
       <button className={styles.primaryButton} type="submit">함대 사전 등록</button>
     </form>
@@ -183,7 +189,7 @@ export function FleetSection(props: FleetSectionProps) {
             </article>
           ) : null}
           {nextWave?.proceed ? (
-            <FleetWaveForm activeVariantIds={nextWave.activeVariantIds} funnelStepIds={props.project.funnelImport?.steps.map((step) => step.id) ?? []} key={nextWave.wave} onRecord={props.onRecordWave} plan={fleet.plan} sampleUsedBefore={lastWave ? lastWave.input.sampleUsedBefore + lastWave.result.sampleUsed : 0} wave={nextWave.wave} />
+            <FleetWaveForm activeVariantIds={nextWave.activeVariantIds} confirmation={nextWave.confirmation} funnelStepIds={props.project.funnelImport?.steps.map((step) => step.id) ?? []} key={nextWave.wave} onRecord={props.onRecordWave} plan={fleet.plan} sampleUsedBefore={lastWave ? lastWave.input.sampleUsedBefore + lastWave.result.sampleUsed : 0} wave={nextWave.wave} />
           ) : nextWave ? (
             <p className={styles.observationNote} role="status">{STOP_LABELS[nextWave.reason]}</p>
           ) : null}
