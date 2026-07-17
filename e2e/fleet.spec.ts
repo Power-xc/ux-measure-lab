@@ -84,7 +84,7 @@ test("fleet: preregister a variant fleet, prefill a wave from measurement and pe
   // 함대 사전 등록: 변형 2개와 정책을 한 번에 잠근다
   await page.getByRole("button", { name: /실험 설계하기/i }).click();
   const fleetSection = page.locator("details").filter({ hasText: /함대 모드/ }).first();
-  await fleetSection.locator("summary").click();
+  await fleetSection.locator("summary").filter({ hasText: /함대 모드/ }).click();
   await fleetSection.getByLabel(/변형 목록/i).fill("A안 | CTA 문구 강조\nB안 | 배너 제거");
   await fleetSection.getByRole("button", { name: /함대 사전 등록/i }).click();
   await expect(fleetSection.getByText(/PREREGISTERED FLEET/i)).toBeVisible();
@@ -113,13 +113,21 @@ test("fleet: preregister a variant fleet, prefill a wave from measurement and pe
   await expect(fleetSection.getByText(/동시 판정 2건 — 보정 없는 다중 비교/)).toBeVisible();
   await expect(fleetSection.getByText(/웨이브 1 — 승급 1 · 컷 1 · 재수집 0/)).toBeVisible();
 
-  // 승급 1개·재수집 0개 → 수렴. 다음 웨이브 폼 대신 중단 사유가 보인다
-  await expect(fleetSection.getByText(/함대가 수렴했습니다/)).toBeVisible();
+  // 승급 1개·재수집 0개 → 같은 표본으로 승격하지 않고 신규 표본 확정 웨이브가 예약된다
+  await expect(fleetSection.getByText(/승격 확정 웨이브 — 승격 후보를 신규 표본으로 재검증/)).toBeVisible();
 
-  // 새로고침 후에도 웨이브 이력과 판정이 복구된다
+  // 확정 웨이브: A안 단독 재관찰. 기준선 10% 대비 +4pp → support → 승격 확정
+  await fleetSection.getByLabel("A안 전환 사용자").fill("56");
+  await fleetSection.getByLabel("A안 전체 사용자").fill("400");
+  await fleetSection.getByRole("button", { name: /웨이브 2 판정/i }).click();
+  await expect(fleetSection.getByText(/승격 확정 — 후보가 신규 표본의 확정 웨이브를 통과/)).toBeVisible();
+  await expect(fleetSection.getByText(/웨이브 2 — 승급 1 · 컷 0 · 재수집 0/)).toBeVisible();
+
+  // 새로고침 후에도 웨이브 이력·확정 상태가 복구된다
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("nav[aria-label='Measure Loop']").getByRole("button", { name: /사전 등록/ }).click();
   const restored = page.locator("details").filter({ hasText: /함대 모드/ }).first();
   await expect(restored.getByText(/웨이브 1 — 승급 1 · 컷 1 · 재수집 0/)).toBeVisible();
-  await expect(restored.getByText(/승격 후보 · A안/)).toBeVisible();
+  await expect(restored.getByText(/웨이브 2 — 승급 1 · 컷 0 · 재수집 0/)).toBeVisible();
+  await expect(restored.getByText(/승격 확정 —/)).toBeVisible();
 });
