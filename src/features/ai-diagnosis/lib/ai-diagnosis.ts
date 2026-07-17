@@ -178,7 +178,7 @@ function compactForGuard(value: string): string {
   return value.normalize("NFKC").toLowerCase().replace(/[\p{C}\p{M}\p{P}\p{S}\p{Z}\s_]+/gu, "");
 }
 
-function isSafeAdvisoryText(value: string): boolean {
+export function isSafeAdvisoryText(value: string): boolean {
   const normalized = value.normalize("NFKC");
   return !CERTAIN_CAUSAL_LANGUAGE.test(normalized)
     && !NUMERIC_LANGUAGE.test(value)
