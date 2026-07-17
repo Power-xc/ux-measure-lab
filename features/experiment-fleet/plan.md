@@ -1,7 +1,7 @@
 # Experiment Fleet — 실행 계획
 
 > **작성일:** 2026-07-16
-> **상태:** Wave 0·1·2 구현 완료 · Wave 3 사용자 검토 대기
+> **상태:** Wave 0·1·2·3 구현 완료
 > **전제:** [spec.md](spec.md)의 불변 조건·계약 결정·AC를 따른다.
 
 ## Wave 0 — 결정적 함대 엔진 (완료)
@@ -81,8 +81,24 @@ src/widgets/measure-workspace/panels/HarnessEvidenceSection.tsx  함대 판독 �
 
 검증: typecheck·lint·`npm test` 199/199·build·E2E 9/9(프리필 흐름 포함) green.
 
-## Wave 3 — AI 변형 후보 생성 + holdout·확정 웨이브 (검토 대기)
+## Wave 3 — AI 변형 후보 생성 + holdout·확정 웨이브 (완료)
 
-- [ ] 기존 AI trust boundary 규칙 재사용: evidence ID 참조만 허용, 수치 생성 금지, 결정적 fallback.
-- [ ] 후보 상한(D-203)과 사람 검토 큐: 후보는 검토·적용 전 함대에 등록되지 않는다.
-- [ ] spec §8 구현: `holdoutShare` 정책 필드와 승격 확정 웨이브(신규 표본, 실패 시 강등).
+영향 파일:
+
+```text
+src/shared/server/ai-provider.ts                          OpenAI Responses 공용 배관 (diagnosis와 공유)
+src/features/experiment-fleet/lib/ai-variants.ts           후보 계약: 요청·출력 이중 검증, 수치·판정 금지
+src/features/experiment-fleet/server/generate-variant-candidates.ts  provider 호출 + 결정적 fallback(가설 원안 1개)
+src/app/api/ai/fleet-variants/route.ts                     same-origin·rate limit·loopback 게이트
+src/features/experiment-fleet/model/request-variant-candidates.ts    클라이언트 재검증
+src/widgets/measure-workspace/panels/FleetCandidateAssist.tsx        검토 큐: 추가해야 목록에 반영
+src/features/experiment-fleet/lib/validate-fleet-plan.ts   holdoutShare (0, 0.5] + 예약 예산 검증
+src/features/experiment-fleet/lib/plan-next-wave.ts        확정 웨이브 스케줄·확정/강등 판정
+```
+
+- [x] AI trust boundary 재사용: evidence ID 참조만 허용, 수치·판정 표현 거부, 서버·클라이언트 이중 검증, 결정적 fallback (FLEET-AI-001~005).
+- [x] 후보 상한 20(D-203)과 사람 검토 큐 — 후보는 "목록에 추가" 후 사전 등록해야 변형이 된다.
+- [x] `holdoutShare` 정책: (0, 0.5], 예약 몫은 예산 검증·웨이브 배분에서 제외 (FLEET-PLAN-007·FLEET-NEXT-004).
+- [x] 승격 확정 웨이브: 수렴 시 신규 표본 재검증, 통과 기준은 승격 후보 산출과 동일, 미달 시 강등 (FLEET-NEXT-002·006, FLEET-WAVE-008, E2E).
+
+검증: typecheck·lint·`npm test` 207/207·build·E2E 9/9(확정 웨이브 흐름 포함) green.
