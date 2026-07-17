@@ -197,6 +197,30 @@ test("FLEET-WAVE-007 flags exposure imbalance without changing any verdict", () 
   assert.deepEqual(balanced.exposureWarnings, []);
 });
 
+test("FLEET-WAVE-008 confirms a promotion only on a single-candidate confirmation wave", () => {
+  assert.throws(
+    () => evaluateFleetWave(makeWave({
+      plan: makePlan(["v-a", "v-b"]),
+      confirmation: true,
+      observations: [
+        { variantId: "v-a", variant: { converted: 56, total: 400 }, observedDays: 7 },
+        { variantId: "v-b", variant: { converted: 52, total: 400 }, observedDays: 7 },
+      ],
+    })),
+    FleetValidationError,
+  );
+
+  const confirmed = evaluateFleetWave(makeWave({
+    plan: makePlan(["v-a", "v-b"]),
+    wave: 2,
+    confirmation: true,
+    sampleUsedBefore: 1800,
+    observations: [{ variantId: "v-a", variant: { converted: 56, total: 400 }, observedDays: 7 }],
+  }));
+  assert.equal(confirmed.promotionCandidateId, "v-a");
+  assert.deepEqual(confirmed.advanced, ["v-a"]);
+});
+
 test("FLEET-WAVE-006 keeps every judged variant when keep share is 1 and at least one when share is small", () => {
   const everyone = evaluateFleetWave(makeWave({
     plan: makePlan(["v-a", "v-b"], { keepShare: 1 }),

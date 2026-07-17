@@ -79,6 +79,7 @@ function isPolicy(value: unknown): boolean {
     && isSafeInteger(value.maxActiveVariants)
     && isFiniteNumber(value.keepShare)
     && isSafeInteger(value.sampleBudget)
+    && (value.holdoutShare === undefined || isFiniteNumber(value.holdoutShare))
     && isRequiredString(value.guardrailMetricName)
     && isFiniteNumber(value.maxGuardrailIncreasePp)
     && isRequiredString(value.stopRule);
@@ -118,7 +119,8 @@ function isWaveObservations(value: unknown): value is FleetWaveObservations {
     && value.observations.length <= MAX_VARIANTS
     && value.observations.every(isObservation)
     && isSafeInteger(value.sampleUsedBefore)
-    && Number(value.sampleUsedBefore) >= 0;
+    && Number(value.sampleUsedBefore) >= 0
+    && (value.confirmation === undefined || typeof value.confirmation === "boolean");
 }
 
 function evaluationsMatch(left: ExperimentEvaluation, right: ExperimentEvaluation): boolean {

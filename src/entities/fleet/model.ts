@@ -21,6 +21,7 @@ export type FleetPolicy = {
   maxActiveVariants: number;
   keepShare: number; // 웨이브 생존 비율 (0, 1]. 1이면 순위 컷 없이 verdict 컷만 적용된다
   sampleBudget: number; // 함대가 소비할 수 있는 전체 표본 예산 (기준선 포함)
+  holdoutShare?: number; // 선택. (0, 0.5] — 어떤 변형에도 배정하지 않고 예약하는 트래픽 몫. 예산 배분에서 제외된다
   guardrailMetricName: string;
   maxGuardrailIncreasePp: number;
   stopRule: string;
@@ -51,6 +52,7 @@ export type FleetWaveObservations = {
   guardrailBaseline?: RateCount;
   observations: FleetVariantObservation[];
   sampleUsedBefore: number;
+  confirmation?: boolean; // 승격 확정 웨이브: 승격 후보 1개를 신규 표본으로 재검증한다
 };
 
 export type FleetWaveInput = FleetWaveObservations & { plan: FleetPlan };
@@ -76,9 +78,11 @@ export type FleetWaveResult = {
   exposureWarnings: string[]; // 배분 이상 신호: 표본이 웨이브 중앙값의 절반 미만·2배 초과인 변형. 판정은 바꾸지 않는다
 };
 
+export type FleetStopReason = "no_survivors" | "budget_exhausted" | "confirmed" | "confirmation_failed";
+
 export type NextWaveDecision =
-  | { proceed: true; wave: number; activeVariantIds: string[]; perVariantSampleTarget: number }
-  | { proceed: false; reason: "no_survivors" | "converged" | "budget_exhausted"; survivors: string[] };
+  | { proceed: true; wave: number; activeVariantIds: string[]; perVariantSampleTarget: number; confirmation: boolean }
+  | { proceed: false; reason: FleetStopReason; survivors: string[] };
 
 // 저장용 웨이브 기록. 입력을 함께 보존해 판정을 언제든 재계산·검증할 수 있게 한다.
 export type FleetWaveRecord = {

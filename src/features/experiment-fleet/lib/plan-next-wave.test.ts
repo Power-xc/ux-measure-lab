@@ -29,7 +29,7 @@ function makePlan(variantIds: string[], policyOverrides: Partial<FleetPlan["poli
       sampleBudget: 10000,
       guardrailMetricName: "환불 요청률",
       maxGuardrailIncreasePp: 0.5,
-      stopRule: "웨이브 3회 완료 또는 예산 소진 시 종료",
+      stopRule: "수렴 후 확정 웨이브 1회 통과 시 종료",
       ...policyOverrides,
     },
     variants: variantIds.map(makeVariant),
@@ -62,20 +62,22 @@ test("FLEET-NEXT-001 carries survivors forward in rank order and splits the rema
 
   assert.ok(decision.proceed);
   assert.equal(decision.wave, 2);
+  assert.equal(decision.confirmation, false);
   // 승급 변형이 순위 순으로 앞서고, 표본 부족 변형이 뒤따르며 동시 상한 4에서 잘린다.
   assert.deepEqual(decision.activeVariantIds, ["v-a", "v-b", "v-c", "v-e"]);
   // 다음 웨이브는 기준선 1개를 포함한 5개 팔이 예산 7350을 나눈다.
   assert.equal(decision.perVariantSampleTarget, 1470);
 });
 
-test("FLEET-NEXT-002 stops as converged when exactly one variant advanced and none need sample", () => {
+test("FLEET-NEXT-002 schedules a fresh-sample confirmation wave instead of promoting the lone winner", () => {
   const decision = planNextWave({
     plan: makePlan(SIX_VARIANTS),
-    lastWave: makeWaveResult({ advanced: ["v-a"] }),
+    lastWave: makeWaveResult({ advanced: ["v-a"], promotionCandidateId: "v-a" }),
   });
-  assert.equal(decision.proceed, false);
-  assert.ok(!decision.proceed && decision.reason === "converged");
-  assert.deepEqual(!decision.proceed ? decision.survivors : [], ["v-a"]);
+  assert.ok(decision.proceed);
+  assert.equal(decision.confirmation, true);
+  assert.deepEqual(decision.activeVariantIds, ["v-a"]);
+  assert.equal(decision.perVariantSampleTarget, 3675);
 });
 
 test("FLEET-NEXT-003 stops when nothing survived the wave", () => {
@@ -86,7 +88,7 @@ test("FLEET-NEXT-003 stops when nothing survived the wave", () => {
   assert.ok(!decision.proceed && decision.reason === "no_survivors");
 });
 
-test("FLEET-NEXT-004 stops when the remaining budget cannot meet the minimum sample per arm", () => {
+test("FLEET-NEXT-004 stops when the holdout-adjusted budget cannot meet the minimum sample per arm", () => {
   const shortBudget = planNextWave({
     plan: makePlan(SIX_VARIANTS),
     lastWave: makeWaveResult({ advanced: ["v-a", "v-b"], sampleBudgetRemaining: 500 }),
@@ -99,15 +101,57 @@ test("FLEET-NEXT-004 stops when the remaining budget cannot meet the minimum sam
     lastWave: makeWaveResult({ advanced: ["v-a", "v-b"], sampleBudgetRemaining: -100 }),
   });
   assert.ok(!overrun.proceed && overrun.reason === "budget_exhausted");
+
+  // holdout 40%는 4,000을 예약한다. 잔여 7,350 중 배분 가능한 3,350을 3개 팔이 나누면 1,116이다.
+  const withHoldout = planNextWave({
+    plan: makePlan(SIX_VARIANTS, { holdoutShare: 0.4, sampleBudget: 10000 }),
+    lastWave: makeWaveResult({ advanced: ["v-a", "v-b"] }),
+  });
+  assert.ok(withHoldout.proceed);
+  assert.equal(withHoldout.perVariantSampleTarget, 1116);
 });
 
-test("FLEET-NEXT-005 keeps collecting for a lone under-sampled variant instead of declaring convergence", () => {
+test("FLEET-NEXT-005 keeps collecting for a lone under-sampled variant instead of scheduling confirmation", () => {
   const decision = planNextWave({
     plan: makePlan(SIX_VARIANTS),
     lastWave: makeWaveResult({ needsSample: ["v-e"] }),
   });
   assert.ok(decision.proceed);
+  assert.equal(decision.confirmation, false);
   assert.deepEqual(decision.activeVariantIds, ["v-e"]);
-  // 기준선과 변형 하나가 예산 7350을 나눈다.
   assert.equal(decision.perVariantSampleTarget, 3675);
+});
+
+test("FLEET-NEXT-006 settles the fleet after a confirmation wave by the promotion-candidate rule", () => {
+  const plan = makePlan(SIX_VARIANTS);
+  const confirmed = planNextWave({
+    plan,
+    lastWave: makeWaveResult({ wave: 2, advanced: ["v-a"], promotionCandidateId: "v-a" }),
+    lastWaveConfirmation: true,
+  });
+  assert.ok(!confirmed.proceed && confirmed.reason === "confirmed");
+  assert.deepEqual(!confirmed.proceed ? confirmed.survivors : [], ["v-a"]);
+
+  // partial_support로 살아남아도 확정 기준(support + guardrail 미위반)에 못 미치면 강등이다.
+  const demoted = planNextWave({
+    plan,
+    lastWave: makeWaveResult({ wave: 2, advanced: ["v-a"], promotionCandidateId: null }),
+    lastWaveConfirmation: true,
+  });
+  assert.ok(!demoted.proceed && demoted.reason === "confirmation_failed");
+
+  const culledOut = planNextWave({
+    plan,
+    lastWave: makeWaveResult({ wave: 2, culled: ["v-a"] }),
+    lastWaveConfirmation: true,
+  });
+  assert.ok(!culledOut.proceed && culledOut.reason === "confirmation_failed");
+
+  const recollect = planNextWave({
+    plan,
+    lastWave: makeWaveResult({ wave: 2, needsSample: ["v-a"] }),
+    lastWaveConfirmation: true,
+  });
+  assert.ok(recollect.proceed && recollect.confirmation === true);
+  assert.deepEqual(recollect.activeVariantIds, ["v-a"]);
 });
