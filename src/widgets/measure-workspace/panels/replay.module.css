@@ -1,0 +1,17 @@
+.replayEmpty { margin: 0; padding: var(--space-16); border: 1px dashed #d8e0ec; border-radius: var(--radius-10, 10px); color: #64718a; }
+
+.replayList { display: grid; gap: var(--space-10); margin: 0; padding: 0; list-style: none; }
+.replayList li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border: 1px solid #d8e0ec; border-radius: var(--radius-10, 10px); background: #ffffff; }
+.replayList strong { display: block; overflow-wrap: anywhere; }
+.replayList small { display: block; margin-top: var(--space-4); color: #64718a; }
+
+.replayPlayer { display: grid; gap: var(--space-10); margin-top: var(--space-16); }
+.replayPlayerHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-10); }
+.replayPlayerHeader span { color: #64718a; font-size: var(--text-label-xsmall); }
+
+.replayFrame { width: 100%; height: 560px; border: 1px solid #d8e0ec; border-radius: var(--radius-10, 10px); background: #101418; }
+
+@media (max-width: 620px) {
+  .replayList li { align-items: stretch; flex-direction: column; }
+  .replayFrame { height: 420px; }
+}

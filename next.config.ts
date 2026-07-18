@@ -14,7 +14,10 @@ const contentSecurityPolicy = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "frame-src 'none'",
+  // The only allowed frame is the replay player sandbox on the loopback ALIAS origin
+  // (cross-origin to the workspace, with its own network-blocking CSP). The replay
+  // route is development-only, so production keeps the stricter frame-src 'none'.
+  `frame-src ${development ? "http://127.0.0.1:* http://localhost:*" : "'none'"}`,
   "manifest-src 'self'",
 ].join("; ");
 
@@ -22,7 +25,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{
-      source: "/(.*)",
+      // The replay player frame is excluded: it must be embeddable by the loopback
+      // workspace and pins its own, strictly tighter CSP in the route handler.
+      source: "/((?!api/replay/player-frame).*)",
       headers: [
         { key: "Content-Security-Policy", value: contentSecurityPolicy },
         { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
