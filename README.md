@@ -79,7 +79,7 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 | Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성·함대 판독 측정이 구성 | **구현** (스킬 4종) |
 | External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
 | Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하고, holdout·신규 표본 확정 웨이브·AI 변형 후보까지 갖춘 결정적 함대 | **구현** |
-| Session replay | 사전 동의, 기본 마스킹, 짧은 보존을 전제로 한 세션 녹화 | spec 확정 · 로드맵 |
+| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·owner-only 재생을 전제로 한 세션 녹화 | **코어 구현** · 녹화 활성화는 rrweb 번들·player·영향평가 게이트 후 |
 
 상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
 
@@ -102,7 +102,7 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 | Experiment fleet — 함대 사전 등록·웨이브 컷·배분·노출 불균형 경고·holdout·확정 웨이브·워크스페이스 UI·리포트 | 구현 |
 | Workspace 스키마 v3 — 함대 이력 저장, v1·v2 무손실 승격, 복원 시 판정 재계산 검증 | 구현 |
 | 근거 기반 AI 진단·가설 제안과 함대 변형 후보 | 선택 기능, loopback development에서 명시적 활성화 필요 |
-| Session replay | spec만 확정, 미구현 |
+| Session replay 코어 — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조 | 구현 · 녹화 활성화는 잔여 게이트(엔진 번들·sandbox player·영향평가) 후 |
 | 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
 
 ## 제품 흐름
@@ -166,7 +166,7 @@ npm audit --omit=dev
 npm run test:e2e
 ```
 
-단위 테스트 207개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증)을 다루고, SDK 테스트 69개는 동의 게이트·마스킹·검출 규칙·세션·전송을 다룹니다. Playwright E2E 9종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 215개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)를 다루고, SDK 테스트 82개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회)를 다룹니다. Playwright E2E 9종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 

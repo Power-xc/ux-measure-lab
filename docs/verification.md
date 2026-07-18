@@ -1,6 +1,6 @@
 # Verification
 
-> **검증일:** 2026-07-17 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `907a53c`
+> **검증일:** 2026-07-18 · Node v26.4.0 · Next.js 16.2.10 · Chrome on macOS · 기준 commit `98f26f0`
 
 ## Release gate
 
@@ -8,10 +8,10 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests (root) | PASS | `npm test` · 207/207 |
-| Unit tests (SDK) | PASS | `npm run test:sdk` · 69/69 (packages/collector, jsdom) |
+| Unit tests (root) | PASS | `npm test` · 215/215 |
+| Unit tests (SDK) | PASS | `npm run test:sdk` · 82/82 (packages/collector, jsdom) |
 | Playwright E2E | PASS | `npm run test:e2e` · 9/9 chromium · production build를 loopback에서 기동해 검증 |
-| Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/ai/fleet-variants`·`/api/product-context`·`/api/ingest`·`/api/harness/measure` |
+| Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/ai/fleet-variants`·`/api/product-context`·`/api/ingest`·`/api/harness/measure`·`/api/replay/ingest`·`/api/replay/recordings` |
 | GitHub CI | PASS | `main`의 verify(typecheck·lint·test·sdk·build·audit) + e2e job green |
 | Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability · 런타임 의존성은 Next/React뿐(Supabase·Upstash·PostHog 전부 fetch 직호출) |
 | Security headers | PASS | production build 로컬 응답에서 CSP, COOP, CORP, Permissions-Policy, Referrer-Policy, nosniff, DENY 확인 |
@@ -39,7 +39,8 @@
 | Harness 측정 | catalog·measure-service·registry·route | 스킬-capability 매핑, 결정적 파생 계산 재사용, insufficient_sample, queryHash 재현성, same-origin 거부, 어댑터 디스패치 |
 | PostHog 어댑터 | query·adapter·http-client | fixture 정규화가 계약 검증 통과, 오류 매핑(401·429·5xx), token-bucket 산술, 교차 어댑터 스키마 동형(HAC-09) |
 | Ingest 백엔드 | backends | PostgREST 요청 형태·헤더, Upstash 고정창 산술·장애 시 in-memory degrade, env 미설정 시 안전기본값 유지 |
-| Collector SDK | 69 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅 |
+| Collector SDK | 82 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅, replay 레코더(별도 동의·SR-01~04 하드 룰·quota pause) |
+| Replay 경계 | SR-05~08·10~11 테스트 | envelope·purpose·privacy 전체 거부, 키·Origin·rate 거부, 30일 상한·purge, visitor 삭제, loopback owner-only read(no-store), qualitative Evidence 참조·만료 표시 |
 
 ## Browser evidence
 
