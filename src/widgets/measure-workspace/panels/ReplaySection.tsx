@@ -78,14 +78,26 @@ export function ReplaySection({ onApplyEvidence }: SectionProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/replay/recordings", { cache: "no-store", signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: { recordings?: ReplayRecordingMeta[] } | null) => {
-        if (data && Array.isArray(data.recordings)) setRecordings(data.recordings);
+    // A mounted flag, not an AbortController: an aborted in-flight fetch never gets a
+    // finished/failed event, which stalls Playwright's networkidle. Letting this
+    // one-shot list fetch complete is harmless.
+    let active = true;
+    fetch("/api/replay/recordings", { cache: "no-store" })
+      .then(async (response) => {
+        // Drain the body on every path (a 404 body left unread stalls networkidle).
+        if (!response.ok) {
+          await response.text().catch(() => undefined);
+          return null;
+        }
+        return response.json() as Promise<{ recordings?: ReplayRecordingMeta[] }>;
+      })
+      .then((data) => {
+        if (active && data && Array.isArray(data.recordings)) setRecordings(data.recordings);
       })
       .catch(() => undefined); // closed boundary or offline: the section simply stays hidden
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleStatus = useCallback((status: PlayerStatus) => setPlayerStatus(status), []);

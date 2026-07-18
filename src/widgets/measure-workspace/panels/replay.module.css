@@ -11,7 +11,14 @@
 
 .replayFrame { width: 100%; height: 560px; border: 1px solid #d8e0ec; border-radius: var(--radius-10, 10px); background: #101418; }
 
+.dogfoodBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-12); margin: var(--space-12) var(--space-24) 0; padding: var(--space-10) var(--space-16); border: 1px dashed #b9c6d8; border-radius: var(--radius-10, 10px); background: #f7fafd; }
+.dogfoodBar strong { display: block; font-size: var(--text-label-small, 13px); }
+.dogfoodBar small { display: block; max-width: 640px; color: #64718a; }
+.dogfoodActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-10); }
+.dogfoodActions span { color: #3a4654; font-size: var(--text-label-xsmall, 12px); }
+
 @media (max-width: 620px) {
   .replayList li { align-items: stretch; flex-direction: column; }
   .replayFrame { height: 420px; }
+  .dogfoodBar { align-items: stretch; flex-direction: column; }
 }
