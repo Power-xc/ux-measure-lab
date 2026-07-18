@@ -9,7 +9,7 @@
 - Project, KPI, Evidence, experiment, verdict와 Decision은 browser `localStorage` schema v2와 사용자 JSON backup에 남는다.
 - 행동 이벤트는 별도 ingest 경로를 통해 선택적 Supabase 증거 계층에 저장된다.
 - 무결성 데이터는 ingest에 보내지 않는다.
-- raw CSV, raw HTML, input value, credential, full referrer URL, raw user agent는 저장하지 않는다. replay 녹화는 gate 9 서명 전까지 활성화하지 않는다([PIA 초안](replay-privacy-impact.md)).
+- raw CSV, raw HTML, input value, credential, full referrer URL, raw user agent는 저장하지 않는다. replay 녹화는 gate 9가 loopback dogfood 범위로 서명되어 owner 자기 세션만 활성이며, 저장 payload도 입력값·form value·텍스트 원문을 담지 않는다(3중 마스킹, [PIA](replay-privacy-impact.md)).
 - 행동 스트림은 손실 허용 표본이다. 결과에는 기간·표본·순서형 신뢰 한계를 함께 표시한다.
 
 ## Boundary map
@@ -21,6 +21,8 @@
 | Harness → Supabase | server-to-server | service role env, site ID, RPC response validation | `upstream_error`·`invalid_response` |
 | Harness → PostHog | server-to-server, read-only | server API key, allowed cloud host, local quota, response validation | typed error, Project 불변 |
 | Browser → local persistence | local | schema-before-write, invariant, compare-before-write | 경고·재시도·backup |
+| Recorder → `/api/replay/ingest` | cross-origin | dogfood site key hash, loopback Origin allowlist, purpose version, privacy 전체 거부, site+IP rate, 30일 상한 | 401/403/422/429, chunk 전체 거부 |
+| Workspace → `/api/replay/recordings`·`player-frame` | same-origin | loopback+development flag, `Sec-Fetch-Site` same-origin(브라우저는 same-origin GET에 `Origin` 생략, 있으면 host 일치 강제), `no-store` | 404/403, no-store |
 
 수집과 측정 API는 서로 다른 경계다. `/api/ingest`에 workspace의 same-origin guard를 적용하면 정상 수집을 차단한다. `/api/harness/measure`에 cross-origin access를 열면 server connector와 aggregate read 권한이 노출된다.
 
@@ -113,7 +115,7 @@ Product URL 분석은 public HTTP(S), credential·port·host·DNS·IP·redirect�
 | Availability | bounded queue/body, 503, local limiter fallback | serverless instance별 fallback은 전역 quota가 아님 |
 | Retention | SQL asset 존재 | migration·cron 미적용 환경은 자동 보존 미보장 |
 | Connector | read-only adapter, strict response | 실제 project 권한과 upstream schema를 운영 전 확인해야 함 |
-| Replay | 코어·sandbox player 구현, 녹화 비활성 | 활성화는 영향평가·법률 서명(gate 9) 후 — [PIA 초안](replay-privacy-impact.md) |
+| Replay | loopback dogfood 활성(owner 자기 세션), 공개 배포 닫힘 | cohort 확대·제3자 녹화는 PIA §4 서명 전까지 미개방, Supabase replay store·durable 저장 미구현 — [PIA](replay-privacy-impact.md) |
 
 ## Operational rules
 

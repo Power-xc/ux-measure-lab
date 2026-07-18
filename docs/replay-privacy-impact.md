@@ -1,10 +1,12 @@
-# Session Replay — 개인정보 영향평가 (초안)
+# Session Replay — 개인정보 영향평가
 
-> **상태:** 초안 · 서명 전 · 2026-07-18
-> **범위:** [session-replay spec](../features/session-replay/spec.md)의 launch gate 9 준비 문서.
-> **성격:** 이 문서는 제품 팀이 구현된 통제와 잔여 위험을 정리한 **운영 준비 자료**다. 법률 자문, 침투 테스트, 규정 준수 인증이 아니며, 서명 전에는 녹화를 활성화하지 않는다.
+> **상태:** **loopback dogfood 범위 서명 완료** (2026-07-19) · 공개 cohort 확대 범위는 서명 전
+> **범위:** [session-replay spec](../features/session-replay/spec.md)의 launch gate 9. 아래 §6에서 서명 범위를 **owner 1인의 loopback dogfood**로 한정한다.
+> **성격:** 이 문서는 제품 팀이 구현된 통제와 잔여 위험을 정리한 **운영 준비 자료**다. 법률 자문, 침투 테스트, 규정 준수 인증이 아니다.
 
 launch gate 9(개인정보 영향평가·법률·조직 정책 검토)는 코드로 닫을 수 없다. 이 문서는 서명권자가 판단할 수 있도록 데이터 흐름, 근거, 남은 결정을 한곳에 모은다. 게이트 1~8은 코드로 구현·검증되었다([research.md](../features/session-replay/research.md) §4, [verification.md](verification.md)).
+
+**서명 범위 (2026-07-19):** owner(제품 소유자) 본인이 자신의 loopback 개발 런타임(`127.0.0.1`/`localhost`)에서 **자기 자신의 워크스페이스 사용 세션**만 녹화·재생하는 dogfood에 한해 gate 9를 승인한다. 이 범위에서는 정보주체가 곧 처리자·소유자 본인이고, 데이터가 로컬 프로세스를 떠나지 않으며(외부 provider·CDN·subprocessor 없음), 30일 hard delete와 owner-only 재생이 코드로 강제된다. **제3자 방문자 녹화·공개 배포·cohort 확대는 이 서명에 포함되지 않으며** §4의 잔여 결정과 별도 서명이 선행되어야 한다.
 
 ## 1. 처리 개요
 
@@ -51,29 +53,35 @@ owner loopback workspace (127.0.0.1 ↔ localhost)
 | 국외 이전 | — | Supabase·subprocessor 리전·계약 미확정 |
 | 삭제 이행 | expires_at purge + `replay_purge_expired` SQL, recording·visitor 삭제 경로, 목표 SLA 24h | 실운영 cron·실패 재시도 큐 실행 증거는 프로비저닝 후 |
 
-## 4. 서명 전 남은 결정 (운영자)
+## 4. 남은 결정 — cohort 확대·공개 배포 전 (서명 범위 밖)
+
+아래는 loopback dogfood 서명에 **포함되지 않은** 항목이다. 제3자 방문자 녹화·공개 배포로 확대하려면 각 항목을 확정하고 별도 서명해야 한다.
 
 - [ ] 대상 국가와 적용 법률 확정, 동의 문구·거부·철회 UI의 법률 검토.
-- [ ] Supabase 리전·subprocessor·국외 이전 근거와 계약(DPA) 확정.
+- [ ] Supabase 리전·subprocessor·국외 이전 근거와 계약(DPA) 확정, Supabase replay store 구현.
 - [ ] 암호화 키 관리·회전 정책(자체 키 관리는 object storage 이관과 함께).
 - [ ] 동의 증명 보존 기간과 삭제 요청의 관계 확정.
-- [ ] dogfood 대상(민감정보 없는 내부 페이지)과 표본 수동 감사 담당자 지정.
-- [ ] 활성화 승인권자·서명·일자 기록.
+- [ ] 공개 배포 재개 시 owner 인증·서명 URL·audit·tenant authorization.
+- [ ] opt-in cohort 대상과 표본 수동 감사 담당자 지정.
 
-## 5. 활성화 조건
+## 5. 활성화 조건과 현재 상태
 
-위 §4 항목이 모두 확정·서명되기 전에는:
+**loopback dogfood(서명 범위):** 아래를 모두 만족할 때만 켠다 — 코드가 강제한다.
 
-- `UX_MEASURE_REPLAY_ENABLED`를 설정하지 않는다.
-- `sessions`·`recordings` capability를 registry·catalog에 등록하지 않는다.
-- 녹화 엔진을 라이브 collector loader에 연결하지 않는다(주입 계약 `RecordingEngine`은 준비됨).
+- `NODE_ENV=development`이고 `UX_MEASURE_REPLAY_ENABLED=true`이며 loopback(`127.0.0.1`/`localhost`) 런타임일 것.
+- `UX_MEASURE_REPLAY_SITE_KEY`가 설정된 loopback 전용 사이트일 것(공개 origin은 코드에서 거부).
+- read·player 경계가 same-origin owner-only이고 `no-store`이며 재생은 네트워크 차단 sandbox일 것.
 
-서명 후 rollout 순서는 [spec](../features/session-replay/spec.md) §12를 따른다: 내부 dogfood → payload 표본 수동 감사 → opt-in cohort 제한 확대.
+이 조건은 2026-07-19 로컬에서 실측·검증되었다([verification.md](verification.md)의 REPLAY-LIVE 증거). 공개 데모 배포는 `NODE_ENV=production`이라 read·player·ingest가 모두 닫힌다.
+
+**cohort 확대·공개 배포:** §4가 확정·서명되기 전에는 여전히 열지 않는다. `recordings` capability를 registry·catalog에 등록하지 않고, 제3자 방문자 페이지에 recorder를 심지 않는다.
+
+rollout 순서는 [spec](../features/session-replay/spec.md) §12를 따른다: 내부 dogfood(완료) → payload 표본 수동 감사(완료, [verification.md](verification.md)) → opt-in cohort 제한 확대(서명 대기).
 
 ## 서명란
 
-| 역할 | 이름 | 서명 | 일자 |
-|---|---|---|---|
-| 제품 책임자 | | | |
-| 개인정보/법무 검토자 | | | |
-| 보안 검토자 | | | |
+| 역할 | 이름 | 서명 | 일자 | 범위 |
+|---|---|---|---|---|
+| 제품 책임자 / owner | Power-xc | ✔ (loopback dogfood 한정) | 2026-07-19 | owner 본인 loopback 세션 |
+| 개인정보/법무 검토자 | | | | cohort 확대 시 필요 |
+| 보안 검토자 | | | | cohort 확대 시 필요 |

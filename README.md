@@ -28,7 +28,7 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보, 가
 - 사용자가 어떤 요소를 클릭하고 어느 단계에서 이탈하는지
 - 세션이 페이지를 넘어 어떻게 이어지고 어디서 끊기는지
 - rage click, dead click 같은 마찰 신호가 어느 화면에 쌓이는지
-- 필요하면 사전 동의 기반 세션 녹화로 해당 맥락을 재생하는지
+- 필요하면 사전 동의 기반 세션 녹화로 해당 맥락을 owner 환경에서 재생하는지 (마스킹·30일 보존·네트워크 차단 sandbox)
 
 행동 데이터는 스크립트 한 줄로 설치되는 first-party SDK가 수집하고, 이미 사용 중인 분석 도구는 read-only 어댑터로 연결합니다. 소스가 무엇이든 동일한 evidence 스키마로 정규화되어 같은 결정 루프에 공급됩니다.
 
@@ -92,7 +92,7 @@ AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들
 | Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성·함대 판독 측정이 구성 | **구현** (스킬 4종) |
 | External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
 | Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하고, holdout·신규 표본 확정 웨이브·AI 변형 후보까지 갖춘 결정적 함대 | **구현** |
-| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·네트워크 차단 sandbox 재생을 전제로 한 세션 녹화 | **코어·rrweb 엔진 바인딩·sandbox player 구현** · 녹화 활성화는 영향평가·법률 서명(gate 9) 후 |
+| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·네트워크 차단 sandbox 재생을 전제로 한 세션 녹화 | **구현 · loopback dogfood 활성** (owner 자기 세션). 공개 cohort 확대는 영향평가 §4 서명 후 |
 
 상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
 
@@ -115,7 +115,7 @@ AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들
 | Experiment fleet — 함대 사전 등록·웨이브 컷·배분·노출 불균형 경고·holdout·확정 웨이브·워크스페이스 UI·리포트 | 구현 |
 | Workspace 스키마 v3 — 함대 이력 저장, v1·v2 무손실 승격, 복원 시 판정 재계산 검증 | 구현 |
 | 근거 기반 AI 진단·가설 제안과 함대 변형 후보 | 선택 기능, loopback development에서 명시적 활성화 필요 |
-| Session replay — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조·rrweb 2.1.0 엔진 바인딩·네트워크 차단 sandbox player | 구현 · 녹화 활성화는 영향평가·법률 서명(gate 9) 후 |
+| Session replay — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조·rrweb 2.1.0 엔진 바인딩·네트워크 차단 sandbox player·owner dogfood 레코더 | 구현 · loopback dogfood 활성 (gate 1~9 서명), 공개 cohort 확대는 영향평가 §4 서명 후 |
 | 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
 
 ## 제품 흐름
@@ -197,7 +197,7 @@ npm audit --omit=dev
 npm run test:e2e
 ```
 
-단위 테스트 229개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)와 재생 sandbox(엔진 바인딩 하드 옵션·재생 스크럽·문서 CSP·프레임 라우트)를 다루고, SDK 테스트 82개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회·엔진 주입)를 다룹니다. Playwright E2E 10종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름, 그리고 실제 vendored 번들로 loopback 경계에서 재생 sandbox의 무-네트워크·무-스크립트·부모 격리를 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 235개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)·재생 sandbox(엔진 바인딩 하드 옵션·재생 스크럽·문서 CSP·프레임 라우트)·dogfood 배선(loopback 사이트 프로비저닝·recorder·same-origin read·인크리멘탈 mutation 마스킹)을 다루고, SDK 테스트 83개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회·엔진 주입)를 다룹니다. Playwright E2E 10종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름, 그리고 실제 vendored 번들로 loopback 경계에서 재생 sandbox의 무-네트워크·무-스크립트·부모 격리를 production build 기준으로 검증합니다. 전체 dogfood 루프(동의→녹화→ingest→owner-only 재생)와 저장 payload 마스킹은 loopback 실측으로 검증했습니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 
@@ -227,7 +227,7 @@ npm run test:e2e
 flowchart LR
   subgraph Visitor["운영 제품 · 방문자 브라우저"]
     SDK["collector SDK<br/>동의 게이트 · PII 하드 마스킹"]
-    REC["replay recorder<br/>별도 동의 · 엔진 주입 · 비활성"]
+    REC["replay recorder<br/>별도 동의 · 엔진 주입 · loopback dogfood"]
   end
   subgraph API["Next.js 서버 (same codebase)"]
     ING["/api/ingest"]
@@ -282,7 +282,7 @@ session replay의 녹화 엔진은 SDK에 직접 넣지 않고 **주입 계약**
 - [Experiment Fleet Spec](features/experiment-fleet/spec.md)
 - [Experiment Fleet Research](features/experiment-fleet/research.md)
 - [Session Replay Spec](features/session-replay/spec.md)
-- [Session Replay Privacy Impact (초안)](docs/replay-privacy-impact.md)
+- [Session Replay Privacy Impact (dogfood 범위 서명)](docs/replay-privacy-impact.md)
 - [Personal Product v1 Spec](features/personal-product-v1/spec.md)
 - [Architecture](docs/architecture.md)
 - [Data Model](docs/data-model.md)
