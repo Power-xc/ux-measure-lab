@@ -45,6 +45,7 @@ Personal API key는 연결할 project의 read 범위만 허용한다. 실제 Que
 1. `supabase/migrations/0001_ingest.sql`: sites, partitioned events, sessions.
 2. `supabase/migrations/0002_aggregates.sql`: service-role aggregate RPC.
 3. `supabase/migrations/0003_segmented_funnel.sql`: 변형별 퍼널 RPC (experiment fleet).
+4. `supabase/migrations/0004_replay.sql`: session replay recordings·chunks + 30일 purge (녹화 활성화 전에는 미사용).
 3. `supabase/jobs.sql`: partition, retention, session rollup, visitor deletion 함수.
 4. `jobs.sql` 하단의 cron 등록문을 운영 환경에 맞게 검토한 뒤 활성화한다.
 
@@ -133,7 +134,7 @@ Supabase env가 없거나 선택 기간에 표본이 없거나 시작·종료 �
 First-party RPC 실패 시 다음을 확인한다.
 
 - `SUPABASE_SITE_ID`가 실제 site UUID인지
-- `0002_aggregates.sql`·`0003_segmented_funnel.sql`이 적용됐는지
+- `0002_aggregates.sql`·`0003_segmented_funnel.sql`·`0004_replay.sql`이 적용됐는지
 - service role에 RPC execute 권한이 있는지
 - 요청 window가 event `ts` 범위와 겹치는지
 - funnel step이 event type 또는 normalized path와 일치하는지
