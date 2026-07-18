@@ -1,7 +1,7 @@
 # Session Replay — 실행 계획
 
 > **작성일:** 2026-07-18
-> **상태:** 코어(수집 게이트·ingest·보존·삭제·read 경계·Evidence 참조)와 녹화 엔진 바인딩·sandbox player까지 구현 완료 · 녹화 활성화는 gate 9(영향평가·법률 서명)만 잔여
+> **상태:** 코어·엔진 바인딩·sandbox player·loopback dogfood 활성화까지 완료 · gate 1~9가 dogfood 범위에서 닫힘 · 공개 cohort 확대는 PIA §4 서명 대기
 > **전제:** [spec.md](spec.md)의 launch gate·scope와 [research.md](research.md)의 결정을 따른다.
 
 ## Wave R0 — 레코더 코어 (완료)
@@ -68,10 +68,23 @@ src/widgets/measure-workspace/panels/ReplaySection.tsx  Diagnose 화면의 owner
 - [x] 재생 network backstop: 중첩 rrweb 재구성 iframe은 문서 CSP를 상속하지 않으므로, 재생 스크럽이 원격 리소스 URL·위험 scheme·능동 태그를 제거해 네트워크 요청 0을 보장(실측: hostile payload도 스크럽 후 외부 요청 0·부모 접근 차단·스크립트 미실행).
 - [x] 위 통제는 `UX_MEASURE_REPLAY_ENABLED` 미설정·`recordings` capability 미등록 상태에서 구현·검증했다. 녹화 엔진은 라이브 loader에 연결하지 않았다(주입 계약만 준비).
 
-## Wave R4 — 녹화 활성화 전 잔여 게이트 (gate 9만 열림)
+## Wave R4 — loopback dogfood 활성화 (완료)
 
-- [ ] 개인정보 영향평가·법률·조직 정책 검토 — launch gate 9 (운영자 절차, 코드로 닫을 수 없음). 준비 문서: [../../docs/replay-privacy-impact.md](../../docs/replay-privacy-impact.md).
-- [ ] gate 9 서명 전까지 `UX_MEASURE_REPLAY_ENABLED` 미설정 유지, `sessions`·`recordings` capability 미등록 유지, 엔진을 라이브 loader에 미연결 유지.
-- [ ] 서명 후: 민감정보 없는 내부 페이지 dogfood → payload 표본 수동 감사 → opt-in cohort 확대 (spec §12).
+영향 파일:
 
-검증: typecheck·lint·`npm test` 229/229·`npm run test:sdk` 82/82·build·E2E 10/10 green. sandbox 재생은 `e2e/replay-sandbox.spec.ts`가 실제 vendored 번들로 loopback 경계에서 검증한다.
+```text
+src/features/replay/server/env-site-store.ts       loopback 전용 dogfood 사이트를 env 키로 프로비저닝(공개 origin 거부)
+src/features/replay/lib/dogfood-recorder.ts         collector recorder + rrweb 엔진 + ingest 전송 배선(브라우저·주입 계약)
+src/widgets/measure-workspace/ReplayDogfoodControls.tsx  동의·종료·철회 UI(loopback read 경계 열림 + 키 설정 시에만 표시)
+src/app/api/replay/{ingest,recordings,player-frame}/route.ts  dogfood 사이트·siteId·번들 경로 배선
+```
+
+- [x] gate 9를 **loopback dogfood 범위로 서명**: owner 본인 loopback 세션 한정([../../docs/replay-privacy-impact.md](../../docs/replay-privacy-impact.md) §6). cohort 확대·공개 배포는 PIA §4 확정·서명 대기.
+- [x] env 키(`UX_MEASURE_REPLAY_SITE_KEY`)로 loopback 전용 사이트 프로비저닝 — 공개 origin은 코드에서 거부. Supabase가 있어도 replay는 in-memory·단일 테넌트라 dogfood가 우선.
+- [x] recorder 배선: 동의(별도 opt-in·GPC/DNT 차단) → rrweb 엔진 주입 → 엔진 무관 하드 새니타이저 → bounded chunk → `/api/replay/ingest`. 종료·철회 UI 포함.
+- [x] read 경계 same-origin 수정: 브라우저는 same-origin GET에 `Origin` 헤더를 생략하므로 `Sec-Fetch-Site`를 신뢰하되 `Origin`이 있으면 host 일치 강제(교차출처 위조 차단).
+- [x] 인크리멘탈 mutation 마스킹 보강: rrweb `{ attributes: [{ id, attributes: { value } }] }`·`texts` 형태에서도 form value·이벤트 핸들러·URL을 하드 제거(서버 전체 거부 규칙과 정합).
+- [x] 실측(2026-07-19): 동의 → 실제 상호작용 녹화 → 202 ingest → owner-only 목록 → 네트워크 차단 sandbox 재생. 저장 payload 수동 감사에서 입력 텍스트·form value·이벤트 핸들러·위험 scheme·외부 URL 없음, 텍스트 마스킹 확인.
+- [x] cohort 확대·제3자 방문자 녹화는 미개방: `recordings` capability 미등록 유지, 공개 배포(`NODE_ENV=production`)는 read·player·ingest 전부 닫힘.
+
+검증: typecheck·lint·`npm test` 235/235·`npm run test:sdk` 83/83·build·E2E 10/10 green. sandbox 재생은 `e2e/replay-sandbox.spec.ts`가 실제 vendored 번들로 loopback 경계에서 검증하고, 전체 dogfood 루프는 2026-07-19 로컬 실측으로 검증했다([../../docs/verification.md](../../docs/verification.md) REPLAY-LIVE).

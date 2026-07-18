@@ -44,6 +44,6 @@
 | 6 단위 삭제 경로 | 코드 구현 | SR-07 — recording·visitor 삭제, read 전 만료 purge |
 | 7 owner-only read | 코드 구현 | SR-08 — loopback flag + same-origin + no-store |
 | 8 재생 sandbox | 코드 구현 | SR-09 — alias-origin sandbox + 문서 CSP `default-src 'none'` + 재생 스크럽. `e2e/replay-sandbox.spec.ts`가 실제 vendored 번들로 검증 |
-| 9 영향평가·법률 검토 | **열림** | 코드로 닫을 수 없음 — 운영자 절차. 준비 문서: [../../docs/replay-privacy-impact.md](../../docs/replay-privacy-impact.md) |
+| 9 영향평가·법률 검토 | **loopback dogfood 범위 서명** | 2026-07-19 owner 서명(자기 loopback 세션 한정). cohort 확대·공개 배포 범위는 열림. [../../docs/replay-privacy-impact.md](../../docs/replay-privacy-impact.md) |
 
-**녹화 활성화 조건:** 게이트 9(영향평가·법률 서명)가 닫히기 전에는 `UX_MEASURE_REPLAY_ENABLED`를 켜지 않고, `sessions`·`recordings` capability도 registry·catalog에 등록하지 않으며, 녹화 엔진을 라이브 loader에 연결하지 않는다. 게이트 1~8과 rrweb vendoring(번들·감사·라이선스)은 구현·검증되었다.
+**녹화 활성화 상태:** loopback dogfood 범위는 gate 1~9가 닫혀 **활성화되었다** — `NODE_ENV=development` + `UX_MEASURE_REPLAY_ENABLED=true` + `UX_MEASURE_REPLAY_SITE_KEY`가 설정된 loopback 런타임에서 owner가 자기 세션을 녹화·재생하고 30일 hard delete·owner-only 재생이 강제된다(2026-07-19 실측). 공개 배포(`NODE_ENV=production`)에서는 read·player·ingest가 모두 닫힌다. **cohort 확대·제3자 방문자 녹화**는 PIA §4 확정·서명 전까지 열지 않으며, `recordings` capability도 registry·catalog에 등록하지 않는다.

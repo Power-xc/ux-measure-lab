@@ -8,8 +8,8 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests (root) | PASS | `npm test` · 229/229 |
-| Unit tests (SDK) | PASS | `npm run test:sdk` · 82/82 (packages/collector, jsdom) |
+| Unit tests (root) | PASS | `npm test` · 235/235 |
+| Unit tests (SDK) | PASS | `npm run test:sdk` · 83/83 (packages/collector, jsdom) |
 | Playwright E2E | PASS | `npm run test:e2e` · 10/10 chromium · production build를 loopback에서 기동해 검증 |
 | Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/ai/fleet-variants`·`/api/product-context`·`/api/ingest`·`/api/harness/measure`·`/api/replay/ingest`·`/api/replay/recordings`·`/api/replay/player-frame` |
 | GitHub CI | PASS | `main`의 verify(typecheck·lint·test·sdk·build·audit) + e2e job green |
@@ -42,6 +42,7 @@
 | Collector SDK | 82 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅, replay 레코더(별도 동의·SR-01~04 하드 룰·quota pause·엔진 주입) |
 | Replay 경계 | SR-05~08·10~11 테스트 | envelope·purpose·privacy 전체 거부, 키·Origin·rate 거부, 30일 상한·purge, visitor 삭제, loopback owner-only read(no-store), qualitative Evidence 참조·만료 표시 |
 | Replay 엔진·재생 | ENGINE-01~03 · SR-09a~09i 테스트 | rrweb 엔진 바인딩의 하드 privacy 옵션 고정·emit·stop, 재생 스크럽(능동 태그 무력화·이벤트 핸들러·위험 scheme·원격 리소스 URL 제거·재귀 상한), sandbox 문서 CSP·frame-ancestors·자산 인라인 이스케이프·상태 메시지 allowlist·loopback 전용 프레임 라우트 |
+| Replay dogfood 배선 | DOGFOOD-01~06 · SR-08(same-origin) · SR-02b 테스트 | env 키의 loopback 전용 사이트 프로비저닝(공개 origin 거부·짧은 키 거부), recorder 배선(동의 전 0건·GPC/DNT 차단·철회 지속), 브라우저 same-origin read(Origin 생략 GET 허용·교차출처 위조 거부), 인크리멘탈 mutation 마스킹(attributes map·texts value) |
 
 ## Browser evidence
 
@@ -76,6 +77,18 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 | LIVE-002 | PASS | 사이트 프로비저닝 후 SDK wire 배치 5건이 `/api/ingest`에서 `202 {accepted:5}` |
 | LIVE-003 | PASS | Supabase `events`에 5행 실재, `funnel_counts` RPC가 단계별 사용자 수를 실계산 |
 | LIVE-004 | PASS | `/api/harness/measure` first-party 측정이 표본 1명에 수치를 만들지 않고 `insufficient_sample` 반환 — HAC-11이 실데이터에서 동작 |
+
+## Replay dogfood live evidence (2026-07-19)
+
+loopback 개발 런타임(`NODE_ENV=development` + `UX_MEASURE_REPLAY_ENABLED=true` + `UX_MEASURE_REPLAY_SITE_KEY`)에서 owner가 자기 워크스페이스 세션을 녹화·재생하는 전체 루프를 Chromium 자동화로 실측했다. gate 9 loopback dogfood 서명의 실행 증거다([replay PIA](replay-privacy-impact.md)).
+
+| ID | Result | Observation |
+|---|---|---|
+| REPLAY-LIVE-01 | PASS | 동의 배너에서 명시 opt-in 후에만 recorder가 시작(동의 전 엔진 로드·전송 0). GPC/DNT 신호 시 grant 클릭에도 `blocked` |
+| REPLAY-LIVE-02 | PASS | 실제 상호작용 녹화 → `/api/replay/ingest` `202 {stored:1}` → owner-only 목록에 1건. 종료·저장은 명시 클릭, 크기 무관 전송(일반 fetch) |
+| REPLAY-LIVE-03 | PASS | 저장 payload 수동 감사: 입력 텍스트·프로젝트명 원문 없음, attributes map에 `value/checked/selected` 없음, 이벤트 핸들러·위험 scheme·외부 URL 없음, 텍스트 마스킹(`*`) 확인 |
+| REPLAY-LIVE-04 | PASS | 재생: alias origin(`localhost`) sandbox 프레임 로드, rrweb 재구성(`.replayer-wrapper`), `재생 준비 완료` 상태. 재생 중 외부 네트워크 요청 0, 프레임→워크스페이스 부모 접근 차단 |
+| REPLAY-LIVE-05 | PASS | 동의 철회 시 즉시 중단·미전송 삭제·`withdrawn` 지속(자동 재시작 없음). 공개 배포(`production`)에서는 read·player·ingest 전부 닫힘 |
 
 ## Acceptance criteria matrix
 
@@ -146,7 +159,7 @@ AI-001~010의 provider mock, injection fixture와 client validation이 위 자�
 - 통계적 유의성, p-value, segment 자동 판정은 구현하지 않았다.
 - 실서비스 연결은 `NOT_RUN`: Supabase·Upstash·PostHog 실계정 호출은 프로비저닝 전이다. env 미설정 시 안전기본값(빈 스토어 → 수집 0, not_configured 폴백)이 게이트로 검증되어 있고, 실연결 후 dogfood 실측이 다음 검증 단계다.
 - PostHog 질의 빌더는 순수 함수로 분리되어 있으나 실제 엔드포인트 계약은 첫 실호출 전 공식 스키마로 재확인해야 한다(`NOT_CHECKED` 주석 기준).
-- session replay는 수집 게이트·마스킹·ingest·30일 보존·삭제·owner-only read·엔진 바인딩·sandbox player까지 구현·검증했으나 **녹화는 비활성**이다. 활성화는 gate 9(영향평가·법률 서명, 코드로 닫을 수 없음) 후이며, `UX_MEASURE_REPLAY_ENABLED` 미설정·`recordings` capability 미등록·엔진 미연결 상태로 유지된다([replay PIA 초안](replay-privacy-impact.md)). 재생 read 경계는 loopback 개발 런타임 전용이라 production E2E(녹화 비활성)에서는 닫혀 있고, sandbox 재생 자체는 BROWSER-009가 vendored 번들로 검증한다.
+- session replay는 **loopback dogfood 범위로 활성화**되었다(gate 1~9가 이 범위에서 닫힘, [replay PIA](replay-privacy-impact.md) §6 owner 서명). owner가 자기 loopback 세션을 녹화·재생하며 30일 hard delete·owner-only read·네트워크 차단 sandbox가 강제된다. **cohort 확대·제3자 방문자 녹화·공개 배포는 서명 범위 밖**으로 PIA §4 확정·서명 전까지 열지 않으며, `recordings` capability도 registry·catalog에 미등록이다. read·player 경계는 loopback+development 전용이라 공개 데모(`production`)와 production E2E에서는 닫혀 있고, sandbox 재생은 BROWSER-009(vendored 번들)와 REPLAY-LIVE-04(실 녹화)로 검증했다. Supabase replay store는 미구현이라 dogfood 저장은 in-memory(단일 dev 프로세스)이며, 다중 인스턴스 durable 저장은 cohort 확대와 함께 붙인다.
 - 실제 OpenAI provider 품질·비용은 `NOT_RUN`; mock contract와 fallback만 release gate다.
 - `useWorkspace`의 저장 실패 state 유지·재시도 경로는 전용 hook-level 자동화 테스트가 아직 없다.
 - VoiceOver·Safari·forced-colors는 후속 compatibility matrix이며 AC에 포함하지 않았다.
