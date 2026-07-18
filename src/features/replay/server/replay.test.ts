@@ -155,14 +155,21 @@ test("SR-08 replay read is closed unless the loopback runtime flag is on and sta
   const disabled = createReplayReadGet(readDeps(store, { enabled: false }));
   assert.equal((await disabled(readRequest("/api/replay/recordings"))).status, 404);
 
-  const crossOrigin = createReplayReadGet(readDeps(store));
-  const foreign = new Request("http://127.0.0.1:3000/api/replay/recordings", { headers: { origin: "https://evil.example", host: "127.0.0.1:3000" } });
-  assert.equal((await crossOrigin(foreign)).status, 403);
+  const read = createReplayReadGet(readDeps(store));
+  // A foreign Origin is rejected even if it forges same-origin Fetch metadata.
+  const foreign = new Request("http://127.0.0.1:3000/api/replay/recordings", { headers: { origin: "https://evil.example", host: "127.0.0.1:3000", "sec-fetch-site": "same-origin" } });
+  assert.equal((await read(foreign)).status, 403);
+  // A cross-site Fetch is rejected.
+  const crossSite = new Request("http://127.0.0.1:3000/api/replay/recordings", { headers: { "sec-fetch-site": "cross-site", host: "127.0.0.1:3000" } });
+  assert.equal((await read(crossSite)).status, 403);
+  // Browsers omit Origin on same-origin GETs — Fetch metadata alone must be enough.
+  const sameOriginNoOrigin = new Request("http://127.0.0.1:3000/api/replay/recordings", { headers: { "sec-fetch-site": "same-origin", host: "127.0.0.1:3000" } });
+  assert.equal((await read(sameOriginNoOrigin)).status, 200);
 
   const unprovisioned = createReplayReadGet(readDeps(store, { siteId: null }));
   assert.equal((await unprovisioned(readRequest("/api/replay/recordings"))).status, 503);
 
-  const list = await createReplayReadGet(readDeps(store))(readRequest("/api/replay/recordings"));
+  const list = await read(readRequest("/api/replay/recordings"));
   assert.equal(list.status, 200);
   assert.equal(list.headers.get("cache-control"), "no-store");
 });

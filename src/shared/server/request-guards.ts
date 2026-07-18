@@ -21,6 +21,17 @@ export function isCrossSite(request: Request): boolean {
   return request.headers.get("sec-fetch-site") === "cross-site";
 }
 
+// Same-origin guard for owner-only GET/DELETE. Browsers omit the Origin header on
+// same-origin GETs, so an Origin-only check would reject legitimate owner reads.
+// A request is same-origin when Fetch metadata says so, or (for clients that send
+// no Fetch metadata) when an explicit Origin matches the host. A cross-site or
+// cross-origin Fetch, or a mismatched Origin, is always rejected.
+export function isSameOriginRequest(request: Request): boolean {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite) return fetchSite === "same-origin" || fetchSite === "none";
+  return hasAllowedOrigin(request);
+}
+
 function clientKey(request: Request): string {
   const direct = request.headers.get("x-real-ip")?.trim();
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
