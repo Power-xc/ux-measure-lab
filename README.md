@@ -8,13 +8,18 @@
 
 UX를 데이터로 개선하려면 오늘은 배워야 할 도구가 너무 많습니다. 퍼널은 분석 도구에, 클릭과 마찰 신호는 히트맵 도구에, 세션 맥락은 녹화 도구에, A/B 테스트는 또 다른 도구에 흩어져 있습니다. 각 도구의 개념·설정·권한을 익혀야 하고, 그렇게 얻은 조각난 결과를 사람이 직접 이어 붙여야 비로소 결정이 나옵니다.
 
-UX MeasureLab은 이 전체 과정을 하나의 workspace로 모읍니다. "가입 퍼널 어디서 사용자가 새는가", "결제 직전 화면에서 왜 마찰이 생기는가" 같은 질문을 입력하면 필요한 측정이 자동으로 구성되고 — measurement harness — 그 결과는 검증 가능한 가설, 사전 등록된 실험, 사람이 기록하는 결정으로 이어집니다.
+그리고 실험의 전제 자체가 바뀌었습니다. A/B 테스트는 시안을 만드는 비용이 비싸던 시대의 도구입니다 — 두세 개를 겨우 만들었으니 두세 개만 비교하면 됐습니다. AI가 변형 후보를 사실상 무한히 만들어내는 지금, 귀한 것은 시안이 아니라 **트래픽과 신뢰할 수 있는 판정**입니다. 후보 100개를 만들 수 있는 시대의 질문은 "무엇을 테스트할까"가 아니라 "무엇을 근거로 믿고 버릴까"입니다.
+
+UX MeasureLab은 이 두 문제를 하나의 workspace로 풉니다. "가입 퍼널 어디서 사용자가 새는가" 같은 질문을 입력하면 필요한 측정이 자동으로 구성되고 — measurement harness — 그 결과는 검증 가능한 가설, 사전 등록된 실험(단일 A/B 또는 변형 함대), 사람이 기록하는 결정으로 이어집니다.
 
 ```text
-질문 → 측정 자동 구성 → Evidence → 가설 → 실험 → 검증 → 사람의 결정
+질문 → 측정 자동 구성 → Evidence → 가설
+→ 실험 사전 등록 (A/B 한 쌍, 또는 변형 함대)
+→ 결정적 판정 (웨이브 컷 → 신규 표본 확정)
+→ 사람의 결정
 ```
 
-AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 가설 대안만 제안합니다. 전환율, delta, guardrail, verdict 같은 계산 가능한 값은 전부 TypeScript 코드가 결정하며 최종 결정은 사람이 기록합니다.
+AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보, 가설 대안과 변형 후보만 제안합니다. 전환율, delta, guardrail, verdict 같은 계산 가능한 값은 전부 TypeScript 코드가 결정하며 최종 결정은 사람이 기록합니다.
 
 ## 전체 여정을 본다
 
@@ -48,7 +53,15 @@ AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보와 �
 
 AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들기에서 트래픽과 판정으로 이동했습니다. 업계는 이미 캠페인당 두세 개가 아니라 수백~수천 개 단위로 실험합니다 — Booking.com은 상시 1,000개 이상의 동시 실험을 운영하고, Yum!(KFC)은 연 2억 건 이상의 상호작용을 AI decisioning에 맡겼습니다. 그러나 보정 없는 대량 실험은 오탐 공장이 됩니다(다중 비교·승자의 저주·novelty effect).
 
-UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배분이나 AI 판정 대신, 사전 등록과 결정적 계산을 대량 실험의 규모로 확장합니다.
+업계 도구들은 이 문제를 밴딧의 확률 배분(Statsig Autotune)이나 상시 가동 AI 에이전트(Amplitude)로 풉니다. UX MeasureLab의 대답은 **experiment fleet**입니다 — 사전 등록과 결정적 계산을 대량 실험의 규모로 확장합니다.
+
+| | 밴딧 · AI 판정 도구 | UX MeasureLab experiment fleet |
+|---|---|---|
+| 변형 후보 | AI가 생성·자동 투입 | AI는 제안만, 사람이 검토해 등록 |
+| 트래픽 배분 | 확률적 재배분 (재현 불가) | 사전 등록 정책의 웨이브 컷 (결정적) |
+| 판정 | 통계 추정 또는 AI 판단 | practical threshold를 코드가 계산, 저장된 판정은 복원 시 재계산 대조 |
+| 승자 확정 | 같은 데이터로 선언 | 신규 표본 확정 웨이브 (승자의 저주 완화) |
+| 최종 결정 | 자동 반영 가능 | 항상 사람이 기록 |
 
 ```text
 함대 사전 등록 (threshold · 변형별 최소 표본 · 표본 예산 · holdout · 동시 상한 · 생존 비율 · guardrail · 종료 규칙)
@@ -107,13 +120,31 @@ UX MeasureLab의 대답은 **experiment fleet**입니다. 밴딧의 확률 배�
 
 ## 제품 흐름
 
+```mermaid
+flowchart TB
+  Q["질문 입력"] --> H["measurement harness<br/>스킬 ↔ 어댑터 자동 매칭"]
+  H --> E["Evidence<br/>provenance · 표본 · 기간"]
+  E --> D["진단 · 마찰 후보"] --> HY["가설 확정"]
+  HY --> P{"실험 사전 등록"}
+  P -->|"A/B 한 쌍"| S["Before/After<br/>threshold · guardrail 판정"]
+  P -->|"변형 함대"| W["웨이브 판정<br/>guardrail 컷 · 원시 delta 순위 · 재수집"]
+  W -->|"생존 변형 다수"| W
+  W -->|"후보 1개 수렴"| C["신규 표본<br/>확정 웨이브"]
+  C -->|"통과"| PR["승격 확정"]
+  C -->|"미달"| DM["강등"]
+  S --> HD["사람의 결정 기록"]
+  PR --> HD
+  DM --> HD
+  HD --> R["Markdown 리포트"]
+```
+
 1. 공개 제품 URL과 대상 사용자, 핵심 가치 행동, 목표를 입력합니다.
 2. KPI 정의, 계산 방식, 측정 기간과 데이터 출처를 확정합니다.
-3. 퍼널 CSV를 업로드해 전환율, 이탈률과 최대 이탈 구간을 계산합니다.
+3. 퍼널 CSV를 업로드하거나 harness 측정으로 전환율, 이탈률과 최대 이탈 구간을 계산합니다.
 4. 관찰·근거·가능한 원인·누락 근거를 구분해 UX 마찰 후보를 만듭니다.
 5. 변경안, 예상 행동, 대안 설명이 포함된 가설을 확정합니다.
-6. 성공·실패·guardrail·표본·기간·종료 규칙을 사전 등록합니다.
-7. 변경 전후 값을 입력해 practical threshold 기반 verdict를 계산합니다.
+6. 성공·실패·guardrail·표본·기간·종료 규칙을 사전 등록합니다. 후보가 여러 개면 **함대 모드**로 변형 목록·표본 예산·생존 비율·holdout까지 한 번에 등록합니다.
+7. 변경 전후 값을 입력해 practical threshold 기반 verdict를 계산합니다. 함대는 웨이브 컷을 거쳐 신규 표본 확정 웨이브로 승격을 확정합니다.
 8. 사람의 결정과 다음 행동을 기록하고 Markdown 리포트를 내보냅니다.
 
 ## 빠른 시작
@@ -190,7 +221,42 @@ npm run test:e2e
 
 ## 아키텍처
 
-상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 핵심 결정의 이유만 요약합니다.
+상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 전체 그림과 핵심 결정의 이유만 요약합니다.
+
+```mermaid
+flowchart LR
+  subgraph Visitor["운영 제품 · 방문자 브라우저"]
+    SDK["collector SDK<br/>동의 게이트 · PII 하드 마스킹"]
+    REC["replay recorder<br/>별도 동의 · 엔진 주입 · 비활성"]
+  end
+  subgraph API["Next.js 서버 (same codebase)"]
+    ING["/api/ingest"]
+    RING["/api/replay/ingest"]
+    MEAS["/api/harness/measure"]
+    RREAD["/api/replay/recordings<br/>loopback owner-only"]
+    AIR["/api/ai/diagnosis · fleet-variants<br/>loopback 전용 · 결정적 fallback"]
+  end
+  subgraph Store["저장 · 짧은 보존"]
+    SB[("Supabase<br/>events 90일 · replay 30일")]
+    UP[("Upstash<br/>durable rate limit")]
+  end
+  subgraph Owner["Owner 워크스페이스 · 브라우저"]
+    WS["8단계 Measure Loop<br/>+ 함대 모드 · 웨이브 프리필"]
+    ENG["결정적 엔진 (순수 TS)<br/>funnel · experiment · fleet"]
+    LS[("localStorage v3<br/>복원 시 판정 재계산 검증")]
+  end
+  PH["PostHog (read-only)"]
+  SDK --> ING --> SB
+  REC --> RING --> SB
+  ING -.-> UP
+  RING -.-> UP
+  WS --> MEAS --> SB
+  PH --> MEAS
+  WS --> RREAD --> SB
+  WS --> AIR
+  WS --- ENG
+  WS <--> LS
+```
 
 ### 왜 이 스택인가
 
