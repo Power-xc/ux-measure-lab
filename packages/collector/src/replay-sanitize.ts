@@ -115,8 +115,17 @@ function sanitizeValue(value: unknown, policy: Required<ReplayMaskPolicy>, depth
     return sanitizeNode(item, policy, depth + 1) ? item : null;
   }
   for (const key of Object.keys(item)) {
-    if (key === "text") {
-      if (typeof item.text === "string") item.text = maskText(item.text);
+    // Incremental mutations carry a bare attribute map (`{ attributes: { value } }`)
+    // with no tagName. The hard rule "form values never survive" must apply to these
+    // too, so any attribute map is scrubbed exactly like a node's — value/checked/
+    // selected and event handlers dropped, URLs and text attributes masked.
+    if (key === "attributes" && record(item.attributes)) {
+      sanitizeAttributes(item);
+      continue;
+    }
+    // `text` (node) and `value` (text mutation) both carry rendered content: mask.
+    if (key === "text" || key === "value") {
+      if (typeof item[key] === "string") item[key] = maskText(item[key] as string);
       continue;
     }
     if ((key === "href" || key === "url" || key === "src") && typeof item[key] === "string") {

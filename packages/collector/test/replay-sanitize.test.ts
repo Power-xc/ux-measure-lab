@@ -29,6 +29,36 @@ test("SR-02 input, password and contenteditable values never survive any configu
   assert.doesNotMatch(serialized, /"value"|"checked"|"selected"/);
 });
 
+test("SR-02b incremental mutation attribute maps and text edits never carry values", () => {
+  // rrweb IncrementalSnapshot (source 0) shape: bare attribute maps with no tagName,
+  // plus text edits carrying rendered content. Both must be scrubbed like a node.
+  const event = {
+    type: 3,
+    timestamp: 2_000,
+    data: {
+      source: 0,
+      texts: [{ id: 23, value: "주문번호 A-1029" }],
+      attributes: [
+        { id: 39, attributes: { value: "홍길동", name: null } },
+        { id: 44, attributes: { href: "https://host.example/u/9f8e7d6c5b4a3f2e1d0c", onclick: "steal()" } },
+      ],
+      removes: [],
+      adds: [{ parentId: 5, nextId: null, node: { tagName: "input", attributes: { value: "secret" }, childNodes: [] } }],
+    },
+  };
+  const sanitized = sanitizeReplayEvent(event) as AnyRecord;
+  const data = sanitized.data as { texts: { value: string }[]; attributes: { attributes: AnyRecord }[] };
+  const serialized = JSON.stringify(sanitized);
+  // No raw content survives anywhere, and no event handler.
+  assert.doesNotMatch(serialized, /홍길동|secret|주문번호|A-1029|9f8e7d6c5b4a3f2e1d0c/);
+  assert.doesNotMatch(serialized, /onclick|steal\(\)/);
+  // Attribute maps carry no form-value keys — this is what the server rejects wholesale.
+  const attributeMaps = JSON.stringify(data.attributes.map((entry) => entry.attributes));
+  assert.doesNotMatch(attributeMaps, /"value"|"checked"|"selected"/);
+  // The text edit keeps its rrweb `value` key but only masked content, so replay still works.
+  assert.match(data.texts[0].value, /^\*+ \*+$/);
+});
+
 test("SR-03 text, url and attribute masking leaves no raw identifiers", () => {
   const event = snapshotEvent({
     tagName: "div",

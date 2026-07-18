@@ -3,7 +3,7 @@
 // runtime, is same-origin, exposes no stable public URL, and every response is
 // no-store. Deletion covers a single recording or a whole anonymous visitor.
 
-import { hasAllowedOrigin, isCrossSite, jsonResponse } from "../../../shared/server/request-guards.ts";
+import { hasAllowedOrigin, isSameOriginRequest, jsonResponse } from "../../../shared/server/request-guards.ts";
 import { sha256Hex } from "../../ingest/server/hash.ts";
 import type { ReplayStore } from "./store.ts";
 
@@ -26,7 +26,12 @@ function fail(status: number, error: string): Response {
 
 function guard(deps: ReplayReadDeps, request: Request): Response | { siteId: string } {
   if (!deps.enabled) return fail(404, "replay_disabled");
-  if (isCrossSite(request) || !hasAllowedOrigin(request)) return fail(403, "origin_not_allowed");
+  // Same-origin only. An explicit Origin, when present, must still match the host,
+  // so a cross-origin fetch that forges Sec-Fetch-Site cannot slip through.
+  const origin = request.headers.get("origin");
+  if (!isSameOriginRequest(request) || (origin !== null && !hasAllowedOrigin(request))) {
+    return fail(403, "origin_not_allowed");
+  }
   if (!deps.siteId) return fail(503, "not_provisioned");
   return { siteId: deps.siteId };
 }
