@@ -5,12 +5,13 @@
 
 ## 1. rrweb 현황 (2026-07 조사)
 
-- **버전:** rrweb 2.1.0 (2026-06-27) — v2 안정, scoped 패키지(`@rrweb/record` 등)로 분리. — [npm](https://www.npmjs.com/package/rrweb), [GitHub releases](https://github.com/rrweb-io/rrweb/releases)
-- **rrweb-player는 v2 안정판이 없다** — npm 안정판은 1.0.0-alpha.4(2022)이고 v2 player는 alpha 진행 중. — [GitHub](https://github.com/rrweb-io/rrweb)
+- **버전:** rrweb 2.1.0 (2026-06-27) — v2 안정, scoped 패키지(`@rrweb/record`·`@rrweb/replay` 등)로 분리. — [npm](https://www.npmjs.com/package/rrweb), [GitHub releases](https://github.com/rrweb-io/rrweb/releases)
+- **`rrweb-player` 2.1.0은 존재하지만 Replayer 배선이 빠져 있다** — 2026-07-18 실측: `rrweb-player` 2.1.0 UMD를 sandbox에 로드하면 `.rr-player` 셸은 렌더되지만 내부 `Replayer`가 인스턴스화되지 않아 재구성 iframe이 생성되지 않는다. 따라서 player 위젯 대신 `@rrweb/replay` 2.1.0 코어를 직접 vendoring하고 최소 컨트롤러(재생·일시정지·속도·타임라인·클릭 마커)를 자체 구현했다. — [npm rrweb-player](https://www.npmjs.com/package/rrweb-player), [npm @rrweb/replay](https://www.npmjs.com/package/@rrweb/replay)
 - **라이선스:** MIT 유지. — [LICENSE](https://github.com/rrweb-io/rrweb/blob/master/LICENSE)
-- **보안:** Snyk 기준 알려진 CVE 없음(2.1.0). — [Snyk](https://security.snyk.io/package/npm/rrweb)
-- **번들:** record 모듈 minified 약 81KB(alpha.15 기준), 특정 alpha에서 PostCSS 동반 비대(#1742) 사례 — 번들 예산 확정은 vendoring 시점에 잠근다. — [issue #1742](https://github.com/rrweb-io/rrweb/issues/1742), [Sentry 최적화 사례](https://blog.sentry.io/session-replay-sdk-bundle-size-optimizations)
-- **privacy 옵션 표면:** `maskAllInputs`, `maskInputOptions`, `maskTextClass/Selector`, `blockClass/Selector`, `ignoreClass/Selector`. 기본값은 마스킹이 아니라 **수집**이므로(예: maskAllInputs 기본 false) 옵션에 의존하지 않는 자체 하드 새니타이저가 필요하다. — [rrweb guide](https://github.com/rrweb-io/rrweb/blob/main/guide.md)
+- **보안:** `npm audit --omit=dev` 0건, Snyk 기준 알려진 CVE 없음(2.1.0). — [Snyk](https://security.snyk.io/package/npm/rrweb)
+- **번들 실측(2.1.0):** `@rrweb/record` UMD minified 78KB(gzip ≈ 24KB) — 동적 import라 메인 클라이언트 번들에 미포함. `@rrweb/replay` UMD minified(gzip ≈ 62KB)는 서버 라우트에서만 읽어 sandbox 문서에 인라인하므로 클라이언트 번들에 미포함. — [issue #1742](https://github.com/rrweb-io/rrweb/issues/1742), [Sentry 최적화 사례](https://blog.sentry.io/session-replay-sdk-bundle-size-optimizations)
+- **privacy 옵션 표면:** `maskAllInputs`, `maskInputOptions`, `maskTextClass/Selector`, `blockClass/Selector`, `ignoreClass/Selector`. 기본값은 마스킹이 아니라 **수집**이므로(예: maskAllInputs 기본 false) 옵션에 의존하지 않는 자체 하드 새니타이저가 필요하다. 엔진 바인딩(`rrweb-engine.ts`)은 이 옵션들을 하드코딩으로 고정하되, 실제 안전은 엔진 무관 새니타이저·서버 거부·재생 스크럽 3중 계층이 보장한다. — [rrweb guide](https://github.com/rrweb-io/rrweb/blob/main/guide.md)
+- **sandbox 아키텍처 실측:** opaque origin(allow-scripts만) sandbox 문서는 자식 iframe의 document에 접근할 수 없어 rrweb 재구성이 실패한다. 그래서 재생 프레임을 loopback **alias origin**(127.0.0.1 워크스페이스 ↔ localhost 프레임)에 두어 브라우저가 프레임↔워크스페이스 간 교차출처 벽을 강제하게 하고, `allow-same-origin`은 프레임이 자기 재구성 iframe만 제어하도록 한다. 중첩 재구성 iframe은 문서 CSP를 상속하지 않으므로 원격 리소스 차단은 재생 스크럽이 담당한다.
 
 ## 2. 업계 사고 사례 — 게이트의 근거
 
@@ -28,7 +29,8 @@
 | 공개 배포 재개 시 인증 | 로드맵 — 그 전까지 read는 loopback 전용 |
 | Replay Evidence schema | 기존 `sourceRef` 재사용: adapterId `replay`, capability `recordings`, sampleSize 1, 만료는 detail에 명시 |
 | Recording quota | 청크 200이벤트·256KB, 녹화 300청크·20MB·30분, ingest 압축 256KB·해제 1MB |
-| 녹화 엔진 | **주입 계약**(`RecordingEngine`) — rrweb 2.x를 번들 예산·감사 확정 후 바인딩. player는 v2 안정판 출시 전 미탑재 |
+| 녹화 엔진 | **주입 계약**(`RecordingEngine`)에 rrweb 2.1.0(`@rrweb/record`) 바인딩 완료 — 번들·감사·라이선스 확정. 라이브 loader 연결은 gate 9 서명 후 |
+| 재생 player | `@rrweb/replay` 2.1.0 코어 직접 vendoring + 자체 최소 컨트롤러. rrweb-player 위젯은 Replayer 미배선으로 미채택 |
 
 ## 4. Launch gate 원장 (spec §2)
 
@@ -41,7 +43,7 @@
 | 5 30일 hard delete | 코드 구현 | SR-06 — expires_at purge + `replay_purge_expired` SQL |
 | 6 단위 삭제 경로 | 코드 구현 | SR-07 — recording·visitor 삭제, read 전 만료 purge |
 | 7 owner-only read | 코드 구현 | SR-08 — loopback flag + same-origin + no-store |
-| 8 재생 sandbox | **미구현** | player 미탑재(rrweb-player v2 alpha) — player 탑재 시 §9 제약과 함께 구현 |
-| 9 영향평가·법률 검토 | **열림** | 코드로 닫을 수 없음 — 운영자 절차 |
+| 8 재생 sandbox | 코드 구현 | SR-09 — alias-origin sandbox + 문서 CSP `default-src 'none'` + 재생 스크럽. `e2e/replay-sandbox.spec.ts`가 실제 vendored 번들로 검증 |
+| 9 영향평가·법률 검토 | **열림** | 코드로 닫을 수 없음 — 운영자 절차. 준비 문서: [../../docs/replay-privacy-impact.md](../../docs/replay-privacy-impact.md) |
 
-**녹화 활성화 조건:** 게이트 8·9와 rrweb vendoring(번들 예산·보안 감사)이 닫히기 전에는 `UX_MEASURE_REPLAY_ENABLED`를 켜지 않고, `sessions`·`recordings` capability도 registry·catalog에 등록하지 않는다.
+**녹화 활성화 조건:** 게이트 9(영향평가·법률 서명)가 닫히기 전에는 `UX_MEASURE_REPLAY_ENABLED`를 켜지 않고, `sessions`·`recordings` capability도 registry·catalog에 등록하지 않으며, 녹화 엔진을 라이브 loader에 연결하지 않는다. 게이트 1~8과 rrweb vendoring(번들·감사·라이선스)은 구현·검증되었다.

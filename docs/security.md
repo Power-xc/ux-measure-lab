@@ -9,7 +9,7 @@
 - Project, KPI, Evidence, experiment, verdict와 Decision은 browser `localStorage` schema v2와 사용자 JSON backup에 남는다.
 - 행동 이벤트는 별도 ingest 경로를 통해 선택적 Supabase 증거 계층에 저장된다.
 - 무결성 데이터는 ingest에 보내지 않는다.
-- raw CSV, raw HTML, input value, credential, full referrer URL, raw user agent와 replay는 저장하지 않는다.
+- raw CSV, raw HTML, input value, credential, full referrer URL, raw user agent는 저장하지 않는다. replay 녹화는 gate 9 서명 전까지 활성화하지 않는다([PIA 초안](replay-privacy-impact.md)).
 - 행동 스트림은 손실 허용 표본이다. 결과에는 기간·표본·순서형 신뢰 한계를 함께 표시한다.
 
 ## Boundary map
@@ -95,8 +95,8 @@ Product URL 분석은 public HTTP(S), credential·port·host·DNS·IP·redirect�
 
 ## Web controls
 
-- production CSP는 script, connect, form과 frame을 same-origin 중심으로 제한한다.
-- `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `object-src 'none'`, COOP, CORP, `nosniff`와 no-referrer를 사용한다.
+- production CSP는 script, connect와 form을 same-origin 중심으로 제한한다. `frame-src`는 loopback replay sandbox(`http://127.0.0.1:*`·`http://localhost:*`)만 허용하며, 그 sandbox 문서는 라우트에서 더 엄격한 자체 CSP(`default-src 'none'`)와 loopback 전용 `frame-ancestors`를 강제한다.
+- `frame-ancestors 'none'`, `X-Frame-Options: DENY`(replay sandbox 라우트 제외), `object-src 'none'`, COOP, CORP, `nosniff`와 no-referrer를 사용한다.
 - API JSON 응답은 `Cache-Control: no-store`다.
 - 외부 text는 React text node로 렌더링하고 `dangerouslySetInnerHTML`을 사용하지 않는다.
 - request body와 in-memory rate key map에 상한이 있다.
@@ -113,7 +113,7 @@ Product URL 분석은 public HTTP(S), credential·port·host·DNS·IP·redirect�
 | Availability | bounded queue/body, 503, local limiter fallback | serverless instance별 fallback은 전역 quota가 아님 |
 | Retention | SQL asset 존재 | migration·cron 미적용 환경은 자동 보존 미보장 |
 | Connector | read-only adapter, strict response | 실제 project 권한과 upstream schema를 운영 전 확인해야 함 |
-| Replay | 미구현 | 구현 전 별도 consent·masking·storage threat model 필요 |
+| Replay | 코어·sandbox player 구현, 녹화 비활성 | 활성화는 영향평가·법률 서명(gate 9) 후 — [PIA 초안](replay-privacy-impact.md) |
 
 ## Operational rules
 
