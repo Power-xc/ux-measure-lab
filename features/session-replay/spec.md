@@ -1,8 +1,8 @@
 # Session Replay — Wave 5 Spec
 
-> **상태:** 코어 구현 · 녹화 비활성 · 2026-07-18 갱신 (초안 2026-07-15)
+> **상태:** 코어·엔진 바인딩·sandbox player 구현 · 녹화 비활성 · 2026-07-18 갱신 (초안 2026-07-15)
 > **범위:** rrweb 기반 녹화 수집·짧은 보존·owner-only 재생의 최소셋
-> **구현 현황:** 수집 게이트·마스킹·chunk quota·ingest·30일 보존·삭제·owner-only read·Evidence 참조는 구현·검증되었다([plan.md](plan.md)). 녹화 엔진 바인딩(rrweb vendoring), sandboxed player(게이트 8), 영향평가·법률 검토(게이트 9)가 닫히기 전에는 녹화를 켜지 않는다([research.md](research.md) §4 게이트 원장).
+> **구현 현황:** 수집 게이트·마스킹·chunk quota·ingest·30일 보존·삭제·owner-only read·Evidence 참조에 더해 녹화 엔진 바인딩(rrweb 2.1.0 vendoring)과 sandboxed player(게이트 8, SR-09)까지 구현·검증되었다([plan.md](plan.md)). 남은 게이트는 영향평가·법률 검토(게이트 9, 운영자 서명)뿐이며, 서명 전에는 녹화를 켜지 않는다([research.md](research.md) §4 게이트 원장, [PIA 초안](../../docs/replay-privacy-impact.md)).
 
 ## 1. Purpose and goal
 

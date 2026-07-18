@@ -8,12 +8,12 @@
 |---|---|---|
 | TypeScript | PASS | `npm run typecheck` · 0 error |
 | ESLint | PASS | `npm run lint` · 0 warning |
-| Unit tests (root) | PASS | `npm test` · 215/215 |
+| Unit tests (root) | PASS | `npm test` · 229/229 |
 | Unit tests (SDK) | PASS | `npm run test:sdk` · 82/82 (packages/collector, jsdom) |
-| Playwright E2E | PASS | `npm run test:e2e` · 9/9 chromium · production build를 loopback에서 기동해 검증 |
-| Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/ai/fleet-variants`·`/api/product-context`·`/api/ingest`·`/api/harness/measure`·`/api/replay/ingest`·`/api/replay/recordings` |
+| Playwright E2E | PASS | `npm run test:e2e` · 10/10 chromium · production build를 loopback에서 기동해 검증 |
+| Production build | PASS | `npm run build` · static `/`, dynamic `/api/ai/diagnosis`·`/api/ai/fleet-variants`·`/api/product-context`·`/api/ingest`·`/api/harness/measure`·`/api/replay/ingest`·`/api/replay/recordings`·`/api/replay/player-frame` |
 | GitHub CI | PASS | `main`의 verify(typecheck·lint·test·sdk·build·audit) + e2e job green |
-| Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability · 런타임 의존성은 Next/React뿐(Supabase·Upstash·PostHog 전부 fetch 직호출) |
+| Dependencies | PASS | `npm audit --omit=dev` · 0 vulnerability · 런타임 의존성은 Next/React와 rrweb 2.1.0(`@rrweb/record` 동적 import·`@rrweb/replay` 서버 인라인, 둘 다 클라이언트 번들 미포함). Supabase·Upstash·PostHog는 fetch 직호출 |
 | Security headers | PASS | production build 로컬 응답에서 CSP, COOP, CORP, Permissions-Policy, Referrer-Policy, nosniff, DENY 확인 |
 | Secret/code scan | PASS | pre-commit secret-scan 게이트 + source에 explicit `any`, `@ts-ignore`, HTML injection, console, TODO 없음 |
 | File size | PASS | 모든 source/test/style 300줄 이하 |
@@ -39,8 +39,9 @@
 | Harness 측정 | catalog·measure-service·registry·route | 스킬-capability 매핑, 결정적 파생 계산 재사용, insufficient_sample, queryHash 재현성, same-origin 거부, 어댑터 디스패치 |
 | PostHog 어댑터 | query·adapter·http-client | fixture 정규화가 계약 검증 통과, 오류 매핑(401·429·5xx), token-bucket 산술, 교차 어댑터 스키마 동형(HAC-09) |
 | Ingest 백엔드 | backends | PostgREST 요청 형태·헤더, Upstash 고정창 산술·장애 시 in-memory degrade, env 미설정 시 안전기본값 유지 |
-| Collector SDK | 82 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅, replay 레코더(별도 동의·SR-01~04 하드 룰·quota pause) |
+| Collector SDK | 82 tests | consent 게이트, 입력값 비수집, rage/dead/scroll 결정적 검출, 세션 산술, 배칭·beacon, 경로 마스킹, SPA 라우팅, replay 레코더(별도 동의·SR-01~04 하드 룰·quota pause·엔진 주입) |
 | Replay 경계 | SR-05~08·10~11 테스트 | envelope·purpose·privacy 전체 거부, 키·Origin·rate 거부, 30일 상한·purge, visitor 삭제, loopback owner-only read(no-store), qualitative Evidence 참조·만료 표시 |
+| Replay 엔진·재생 | ENGINE-01~03 · SR-09a~09i 테스트 | rrweb 엔진 바인딩의 하드 privacy 옵션 고정·emit·stop, 재생 스크럽(능동 태그 무력화·이벤트 핸들러·위험 scheme·원격 리소스 URL 제거·재귀 상한), sandbox 문서 CSP·frame-ancestors·자산 인라인 이스케이프·상태 메시지 allowlist·loopback 전용 프레임 라우트 |
 
 ## Browser evidence
 
@@ -56,6 +57,7 @@ BROWSER-001~004는 Playwright E2E로 자동화되어 CI에서 반복 검증된�
 | BROWSER-006 | PASS · 자동화 | `e2e/harness.spec.ts` — 빈 aggregate에서 측정 실행 시 수치 없이 `insufficient_sample` 카드 표시 (HAC-11의 UI 계약) |
 | BROWSER-007 | PASS · 자동화 | `e2e/harness.spec.ts` — mock 응답으로 측정 성공 시 draft 유지·세션 캐시 재사용·명시적 적용 후에만 저장 (HAC-08·HAC-10) |
 | BROWSER-008 | PASS · 자동화 | `e2e/fleet.spec.ts` — 함대 사전 등록 → 변형별 측정 프리필(mock segments 응답) → 웨이브 판정(승급·컷·승격 후보·다중 비교 병기) → 신규 표본 확정 웨이브 → 승격 확정 → 새로고침 후 이력 복구 (FAC-12·FAC-14·FAC-15) |
+| BROWSER-009 | PASS · 자동화 | `e2e/replay-sandbox.spec.ts` — 실제 vendored `@rrweb/replay` 2.1.0 번들을 loopback alias 경계(127.0.0.1↔localhost)에서 로드, hostile payload를 워크스페이스와 동일하게 스크럽 후 재생: `replay:playing` 수신·중첩 iframe 재구성(마스킹 h1 존재)·스크립트 미실행·외부 네트워크 요청 0·부모 접근 차단 단언 (SR-09) |
 
 ## Deployment evidence
 
@@ -144,7 +146,7 @@ AI-001~010의 provider mock, injection fixture와 client validation이 위 자�
 - 통계적 유의성, p-value, segment 자동 판정은 구현하지 않았다.
 - 실서비스 연결은 `NOT_RUN`: Supabase·Upstash·PostHog 실계정 호출은 프로비저닝 전이다. env 미설정 시 안전기본값(빈 스토어 → 수집 0, not_configured 폴백)이 게이트로 검증되어 있고, 실연결 후 dogfood 실측이 다음 검증 단계다.
 - PostHog 질의 빌더는 순수 함수로 분리되어 있으나 실제 엔드포인트 계약은 첫 실호출 전 공식 스키마로 재확인해야 한다(`NOT_CHECKED` 주석 기준).
-- session replay는 [spec](../features/session-replay/spec.md)만 존재하며 구현하지 않았다. 사전 동의·기본 마스킹·짧은 보존이 선행 조건이다.
+- session replay는 수집 게이트·마스킹·ingest·30일 보존·삭제·owner-only read·엔진 바인딩·sandbox player까지 구현·검증했으나 **녹화는 비활성**이다. 활성화는 gate 9(영향평가·법률 서명, 코드로 닫을 수 없음) 후이며, `UX_MEASURE_REPLAY_ENABLED` 미설정·`recordings` capability 미등록·엔진 미연결 상태로 유지된다([replay PIA 초안](replay-privacy-impact.md)). 재생 read 경계는 loopback 개발 런타임 전용이라 production E2E(녹화 비활성)에서는 닫혀 있고, sandbox 재생 자체는 BROWSER-009가 vendored 번들로 검증한다.
 - 실제 OpenAI provider 품질·비용은 `NOT_RUN`; mock contract와 fallback만 release gate다.
 - `useWorkspace`의 저장 실패 state 유지·재시도 경로는 전용 hook-level 자동화 테스트가 아직 없다.
 - VoiceOver·Safari·forced-colors는 후속 compatibility matrix이며 AC에 포함하지 않았다.

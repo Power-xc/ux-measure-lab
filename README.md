@@ -92,7 +92,7 @@ AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들
 | Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성·함대 판독 측정이 구성 | **구현** (스킬 4종) |
 | External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
 | Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하고, holdout·신규 표본 확정 웨이브·AI 변형 후보까지 갖춘 결정적 함대 | **구현** |
-| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·owner-only 재생을 전제로 한 세션 녹화 | **코어 구현** · 녹화 활성화는 rrweb 번들·player·영향평가 게이트 후 |
+| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·네트워크 차단 sandbox 재생을 전제로 한 세션 녹화 | **코어·rrweb 엔진 바인딩·sandbox player 구현** · 녹화 활성화는 영향평가·법률 서명(gate 9) 후 |
 
 상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
 
@@ -115,7 +115,7 @@ AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들
 | Experiment fleet — 함대 사전 등록·웨이브 컷·배분·노출 불균형 경고·holdout·확정 웨이브·워크스페이스 UI·리포트 | 구현 |
 | Workspace 스키마 v3 — 함대 이력 저장, v1·v2 무손실 승격, 복원 시 판정 재계산 검증 | 구현 |
 | 근거 기반 AI 진단·가설 제안과 함대 변형 후보 | 선택 기능, loopback development에서 명시적 활성화 필요 |
-| Session replay 코어 — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조 | 구현 · 녹화 활성화는 잔여 게이트(엔진 번들·sandbox player·영향평가) 후 |
+| Session replay — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조·rrweb 2.1.0 엔진 바인딩·네트워크 차단 sandbox player | 구현 · 녹화 활성화는 영향평가·법률 서명(gate 9) 후 |
 | 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
 
 ## 제품 흐름
@@ -197,7 +197,7 @@ npm audit --omit=dev
 npm run test:e2e
 ```
 
-단위 테스트 215개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)를 다루고, SDK 테스트 82개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회)를 다룹니다. Playwright E2E 9종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름을 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
+단위 테스트 229개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)와 재생 sandbox(엔진 바인딩 하드 옵션·재생 스크럽·문서 CSP·프레임 라우트)를 다루고, SDK 테스트 82개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회·엔진 주입)를 다룹니다. Playwright E2E 10종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름, 그리고 실제 vendored 번들로 loopback 경계에서 재생 sandbox의 무-네트워크·무-스크립트·부모 격리를 production build 기준으로 검증합니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
 
 ## 데이터·보안 원칙
 
@@ -233,7 +233,7 @@ flowchart LR
     ING["/api/ingest"]
     RING["/api/replay/ingest"]
     MEAS["/api/harness/measure"]
-    RREAD["/api/replay/recordings<br/>loopback owner-only"]
+    RREAD["/api/replay/recordings · player-frame<br/>loopback owner-only · 네트워크 차단 sandbox"]
     AIR["/api/ai/diagnosis · fleet-variants<br/>loopback 전용 · 결정적 fallback"]
   end
   subgraph Store["저장 · 짧은 보존"]
@@ -266,6 +266,8 @@ Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 테스트는 `node:
 
 `entities → features → widgets` 단방향 의존입니다. 어휘(capability·verdict·evidence)의 단일 출처는 entities이고, features는 그것을 재수출만 합니다. 외부 입력(CSV·JSON·URL·HTML·AI 출력·어댑터 응답)은 전부 trust boundary에서 runtime validation을 거치며, AI 제안 경로와 결정적 계산 경로를 코드 수준에서 분리해 AI가 수치를 만들 수 없게 했습니다. measurement harness와 experiment fleet이 모두 "계약 선언 → 자동 매칭 → 결정적 실행" 구조인 이유는, 소스와 스킬이 늘어나도 판정 코드를 재작성하지 않기 위해서입니다 ([ADR-0001](docs/adrs/0001-decision-layer.md), [ADR-0002](docs/adrs/0002-experiment-fleet.md)).
 
+session replay의 녹화 엔진은 SDK에 직접 넣지 않고 **주입 계약**(`RecordingEngine`)으로 분리했습니다. SDK를 의존성 0으로 유지하고, 동의 전에는 엔진 코드가 로드조차 되지 않게 하기 위해서입니다. 재생 안전은 단일 장치가 아니라 세 계층으로 나눴습니다 — 기록 시 엔진 무관 하드 새니타이저, 서버 ingest의 privacy 전체 거부, 재생 직전 payload 스크럽. 재생 프레임을 **loopback alias origin**(127.0.0.1 워크스페이스 ↔ localhost 프레임)에 둔 것은 측정으로 강제된 선택입니다: 완전 opaque sandbox(allow-scripts만) 문서는 자식 iframe에 접근할 수 없어 rrweb 재구성이 실패하고, alias origin은 브라우저가 프레임↔워크스페이스 교차출처 벽을 강제하게 하면서 프레임이 자기 재구성 iframe만 제어하게 합니다. 중첩 재구성 iframe이 문서 CSP를 상속하지 않으므로 원격 리소스 차단은 CSP가 아니라 재생 스크럽이 책임집니다.
+
 ### 포기한 것
 
 - **자체 analytics 플랫폼** — 수집·쿼리·replay 인프라 대신 기존 도구 위의 decision layer로 시작했습니다. 통제력을 포기하고 검증 속도를 얻는 트레이드오프입니다 (ADR-0001).
@@ -280,6 +282,7 @@ Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 테스트는 `node:
 - [Experiment Fleet Spec](features/experiment-fleet/spec.md)
 - [Experiment Fleet Research](features/experiment-fleet/research.md)
 - [Session Replay Spec](features/session-replay/spec.md)
+- [Session Replay Privacy Impact (초안)](docs/replay-privacy-impact.md)
 - [Personal Product v1 Spec](features/personal-product-v1/spec.md)
 - [Architecture](docs/architecture.md)
 - [Data Model](docs/data-model.md)
