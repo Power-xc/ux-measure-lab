@@ -35,6 +35,7 @@ import {
   resultChanged,
 } from "../../features/project-workflow/lib/project-updates";
 import { NewProjectDialog } from "./NewProjectDialog";
+import { ReplayDogfoodControls } from "./ReplayDogfoodControls";
 import { WorkspaceEmpty } from "./WorkspaceEmpty";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -93,7 +94,12 @@ export function MeasureWorkspace() {
   }
 
   if (!project || !progress) {
-    return <WorkspaceEmpty corruptedBackup={controller.corruptedBackup} hydrated={controller.hydrated} onCreate={createProject} onImport={restoreBackup} onRecover={controller.recoverStorage} storageError={controller.storageError} />;
+    return (
+      <>
+        <ReplayDogfoodControls />
+        <WorkspaceEmpty corruptedBackup={controller.corruptedBackup} hydrated={controller.hydrated} onCreate={createProject} onImport={restoreBackup} onRecover={controller.recoverStorage} storageError={controller.storageError} />
+      </>
+    );
   }
   const activeProject = project;
 
@@ -225,6 +231,7 @@ export function MeasureWorkspace() {
         <WorkspaceSidebar activeProjectId={controller.workspace.activeProjectId} activeSection={activeSection} onNewProject={() => setShowNewProject(true)} onSelectProject={selectProject} onSelectSection={selectSection} progress={progress} projects={controller.workspace.projects} />
         <div className={styles.mainColumn}>
           <WorkspaceHeader activeSection={activeSection} onDelete={removeProject} onExport={controller.exportBackup} onImport={restoreBackup} onSelectSection={selectSection} progress={progress} projectName={activeProject.name} />
+          <ReplayDogfoodControls />
           {controller.storageError ? <div className={styles.storageWarning} role="alert"><span>{controller.storageError.message} JSON 백업을 내려받아 데이터를 보존하세요.</span>{controller.storageError.code === "storage_write_failed" ? <button className={styles.secondaryButton} onClick={controller.retrySave} type="button">저장 재시도</button> : null}</div> : null}
           <main aria-labelledby="active-panel-title" className={styles.workspaceContent} id="workspace-content" ref={mainRef} tabIndex={-1}>{panels[activeSection]}</main>
         </div>

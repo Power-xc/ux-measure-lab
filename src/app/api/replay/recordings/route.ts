@@ -1,4 +1,5 @@
 import { defaultReplayStore } from "../../../../features/replay/server/default-store.ts";
+import { readReplayDogfoodKey, REPLAY_DOGFOOD_SITE_ID } from "../../../../features/replay/server/env-site-store.ts";
 import {
   createReplayReadDelete,
   createReplayReadGet,
@@ -12,9 +13,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function createDeps(): ReplayReadDeps {
+  // The owner site is the env-provisioned loopback dogfood site when a key is set
+  // (replay storage is in-memory here), otherwise the Supabase-provisioned site —
+  // the same single-tenant boundary either way.
+  const siteId = readReplayDogfoodKey(process.env)
+    ? REPLAY_DOGFOOD_SITE_ID
+    : (readServerEnv().supabase?.siteId ?? null);
   return {
     enabled: isReplayRuntimeEnabled(),
-    siteId: readServerEnv().supabase?.siteId ?? null,
+    siteId,
     store: defaultReplayStore,
     now: () => Date.now(),
   };

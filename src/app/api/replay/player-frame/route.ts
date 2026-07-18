@@ -1,6 +1,5 @@
-import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   createReplayFrameGet,
   type ReplayPlayerAssetName,
@@ -10,9 +9,9 @@ import { isReplayRuntimeEnabled } from "../../../../features/replay/server/read-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const require = createRequire(import.meta.url);
 // The package export map only exposes its entry point, so vendored dist files are
-// located relative to the resolved entry instead of by subpath.
+// read by their known subpath. process.cwd() is a runtime value (the loopback dev
+// server's project root) — unlike import.meta.url, the bundler does not virtualize it.
 const ASSET_FILES: Record<ReplayPlayerAssetName, string> = {
   script: "replay.umd.min.cjs",
   style: "style.min.css",
@@ -22,8 +21,8 @@ const cache = new Map<ReplayPlayerAssetName, string>();
 async function readAsset(name: ReplayPlayerAssetName): Promise<string> {
   const cached = cache.get(name);
   if (cached) return cached;
-  const distDir = dirname(require.resolve("@rrweb/replay"));
-  const content = await readFile(join(distDir, ASSET_FILES[name]), "utf8");
+  const path = join(process.cwd(), "node_modules", "@rrweb", "replay", "dist", ASSET_FILES[name]);
+  const content = await readFile(path, "utf8");
   cache.set(name, content);
   return content;
 }

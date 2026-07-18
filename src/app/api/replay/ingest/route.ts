@@ -4,6 +4,7 @@ import { InMemorySiteStore } from "../../../../features/ingest/server/site-store
 import { SupabaseSiteStore } from "../../../../features/ingest/server/backends/supabase-site-store.ts";
 import { UpstashRateLimiter } from "../../../../features/ingest/server/backends/upstash-rate-limiter.ts";
 import { defaultReplayStore } from "../../../../features/replay/server/default-store.ts";
+import { createReplayDogfoodSiteStore } from "../../../../features/replay/server/env-site-store.ts";
 import {
   createReplayIngestPost,
   REPLAY_BODY_LIMITS,
@@ -22,9 +23,15 @@ export function createDefaultReplayIngestDeps(
   fetcher: typeof fetch = fetch,
 ): ReplayIngestDeps {
   const env = readServerEnv(source);
+  // Replay storage is in-memory and single-tenant for now, so a configured dogfood
+  // key takes precedence over Supabase for the REPLAY site lookup even when Supabase
+  // backs the other features. Supabase's site store only applies once a Supabase
+  // replay store exists; without either, every request is 401.
+  const dogfoodSiteStore = createReplayDogfoodSiteStore(source);
   return {
     enabled: source.UX_MEASURE_REPLAY_ENABLED === "true",
-    siteStore: env.supabase ? new SupabaseSiteStore(env.supabase, fetcher) : new InMemorySiteStore(),
+    siteStore: dogfoodSiteStore
+      ?? (env.supabase ? new SupabaseSiteStore(env.supabase, fetcher) : new InMemorySiteStore()),
     store: defaultReplayStore,
     rateLimiter: env.upstash ? new UpstashRateLimiter(env.upstash, fetcher) : new InMemoryDurableRateLimiter(),
     now: () => Date.now(),
