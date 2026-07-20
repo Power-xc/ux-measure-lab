@@ -259,10 +259,10 @@ flowchart LR
   WS --- ENG
   WS <--> LS
 
-  style Visitor fill:transparent,stroke:#999,stroke-width:1px
-  style API fill:transparent,stroke:#999,stroke-width:1px
-  style Store fill:transparent,stroke:#999,stroke-width:1px
-  style Owner fill:transparent,stroke:#999,stroke-width:1px
+  style Visitor fill:transparent,stroke:transparent
+  style API fill:transparent,stroke:transparent
+  style Store fill:transparent,stroke:transparent
+  style Owner fill:transparent,stroke:transparent
 ```
 
 ### 스택 선정 이유
