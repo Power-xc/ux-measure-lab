@@ -224,6 +224,8 @@ npm run test:e2e
 상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 전체 그림과 핵심 결정의 이유만 요약합니다.
 
 ```mermaid
+%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}}}}%%
+
 flowchart LR
   subgraph Visitor["운영 제품 · 방문자 브라우저"]
     SDK["collector SDK<br/>동의 게이트 · PII 하드 마스킹"]
@@ -256,13 +258,18 @@ flowchart LR
   WS --> AIR
   WS --- ENG
   WS <--> LS
+
+  style Visitor fill:transparent,stroke:#999,stroke-width:1px
+  style API fill:transparent,stroke:#999,stroke-width:1px
+  style Store fill:transparent,stroke:#999,stroke-width:1px
+  style Owner fill:transparent,stroke:#999,stroke-width:1px
 ```
 
-### 왜 이 스택인가
+### 스택 선정 이유
 
 Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 테스트는 `node:test`. 1인 개발과 local-first 전제에서 런타임 의존성을 Next/React 둘로 최소화했고(Supabase·Upstash·PostHog는 전부 fetch 직호출), 전환율·delta·verdict 같은 판정 로직은 프레임워크에 묶이지 않는 순수 TypeScript 모듈로 분리해 `node --test`로 즉시 검증합니다. 영속성은 versioned `localStorage` repository + JSON 백업 — 서버 DB보다 느슨하지만, 개인 워크스페이스에서 데이터 주권과 복구 경로가 더 중요하다고 판단했습니다.
 
-### 왜 이 구조인가
+### 구조 선정 이유
 
 `entities → features → widgets` 단방향 의존입니다. 어휘(capability·verdict·evidence)의 단일 출처는 entities이고, features는 그것을 재수출만 합니다. 외부 입력(CSV·JSON·URL·HTML·AI 출력·어댑터 응답)은 전부 trust boundary에서 runtime validation을 거치며, AI 제안 경로와 결정적 계산 경로를 코드 수준에서 분리해 AI가 수치를 만들 수 없게 했습니다. measurement harness와 experiment fleet이 모두 "계약 선언 → 자동 매칭 → 결정적 실행" 구조인 이유는, 소스와 스킬이 늘어나도 판정 코드를 재작성하지 않기 위해서입니다 ([ADR-0001](docs/adrs/0001-decision-layer.md), [ADR-0002](docs/adrs/0002-experiment-fleet.md)).
 
