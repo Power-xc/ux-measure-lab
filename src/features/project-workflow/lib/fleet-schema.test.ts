@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { FleetPlan, FleetState, FleetWaveObservations } from "../../entities/fleet/model.ts";
-import { evaluateFleetWave } from "../../features/experiment-fleet/lib/evaluate-fleet-wave.ts";
+import type { FleetPlan, FleetState, FleetWaveObservations } from "../../../entities/fleet/model.ts";
+import { evaluateFleetWave } from "../../experiment-fleet/lib/evaluate-fleet-wave.ts";
 import { isFleetState } from "./fleet-schema.ts";
 
 function makePlan(): FleetPlan {

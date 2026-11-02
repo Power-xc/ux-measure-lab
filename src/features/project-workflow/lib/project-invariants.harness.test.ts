@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Evidence, Project, WorkspaceState } from "../../entities/project/model.ts";
-import { applyHarnessEvidence } from "../../features/project-workflow/lib/project-updates.ts";
+import type { Evidence, Project, WorkspaceState } from "../../../entities/project/model.ts";
+import { applyHarnessEvidence } from "../../project-workflow/lib/project-updates.ts";
 import { isProjectStateConsistent } from "./project-invariants.ts";
 import { saveWorkspace, type StorageLike } from "./project-repository.ts";
 

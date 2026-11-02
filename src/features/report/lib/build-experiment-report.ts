@@ -1,6 +1,6 @@
 import type { FleetState } from "../../../entities/fleet/model.ts";
 import type { Project } from "../../../entities/project/model.ts";
-import { isProjectStateConsistent } from "../../../shared/lib/project-invariants.ts";
+import { isProjectStateConsistent } from "../../project-workflow/lib/project-invariants.ts";
 
 export type ReportResult =
   | { ok: true; markdown: string }

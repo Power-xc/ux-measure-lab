@@ -1,5 +1,5 @@
-import type { ExperimentEvaluationInput, ExperimentPlan } from "../../entities/experiment/model.ts";
-import { CONFIDENCE_LEVELS, SOURCE_CAPABILITIES, type Evidence, type Project } from "../../entities/project/model.ts";
+import type { ExperimentEvaluationInput, ExperimentPlan } from "../../../entities/experiment/model.ts";
+import { CONFIDENCE_LEVELS, SOURCE_CAPABILITIES, type Evidence, type Project } from "../../../entities/project/model.ts";
 
 function hasReferences(ids: readonly string[], available: ReadonlySet<string>): boolean {
   return ids.every((id) => available.has(id));

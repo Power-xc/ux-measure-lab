@@ -9,7 +9,7 @@ import {
   WORKSPACE_BACKUP_KEY,
   WORKSPACE_STORAGE_KEY,
   type StorageLike,
-} from "../../shared/lib/project-repository.ts";
+} from "../project-workflow/lib/project-repository.ts";
 import {
   parseNormalizedMeasurement,
   SOURCE_CAPABILITIES,

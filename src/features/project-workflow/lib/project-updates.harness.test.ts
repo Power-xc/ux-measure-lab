@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Evidence, Project } from "../../../entities/project/model.ts";
-import { isProjectStateConsistent } from "../../../shared/lib/project-invariants.ts";
+import { isProjectStateConsistent } from "./project-invariants.ts";
 import { applyHarnessEvidence } from "./project-updates.ts";
 
 function project(): Project {

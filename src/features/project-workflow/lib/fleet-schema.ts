@@ -1,4 +1,4 @@
-import type { ExperimentEvaluation, RateCount } from "../../entities/experiment/model.ts";
+import type { ExperimentEvaluation, RateCount } from "../../../entities/experiment/model.ts";
 import type {
   FleetPlan,
   FleetState,
@@ -6,10 +6,10 @@ import type {
   FleetWaveObservations,
   FleetWaveRecord,
   FleetWaveResult,
-} from "../../entities/fleet/model.ts";
-import { evaluateFleetWave } from "../../features/experiment-fleet/lib/evaluate-fleet-wave.ts";
-import { validateFleetPlan } from "../../features/experiment-fleet/lib/validate-fleet-plan.ts";
-import { MAX_TEXT_LENGTH } from "./input-policy.ts";
+} from "../../../entities/fleet/model.ts";
+import { evaluateFleetWave } from "../../experiment-fleet/lib/evaluate-fleet-wave.ts";
+import { validateFleetPlan } from "../../experiment-fleet/lib/validate-fleet-plan.ts";
+import { MAX_TEXT_LENGTH } from "../../../shared/lib/input-policy.ts";
 
 // 백업 JSON 경계의 상한. 도메인 규칙(validateFleetPlan)과 별개로 비정상 크기 입력을 차단한다.
 const MAX_VARIANTS = 200;

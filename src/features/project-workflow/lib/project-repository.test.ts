@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Decision } from "../../entities/decision/model.ts";
-import type { ExperimentPlan } from "../../entities/experiment/model.ts";
-import { createProject, deleteProject, replaceProject, type MetricDefinition, type ProjectContext } from "../../entities/project/model.ts";
-import { evaluateExperiment } from "../../features/experiment/lib/evaluate-experiment.ts";
+import type { Decision } from "../../../entities/decision/model.ts";
+import type { ExperimentPlan } from "../../../entities/experiment/model.ts";
+import { createProject, deleteProject, replaceProject, type MetricDefinition, type ProjectContext } from "../../../entities/project/model.ts";
+import { evaluateExperiment } from "../../experiment/lib/evaluate-experiment.ts";
 import {
   createEmptyWorkspace,
   exportWorkspace,

@@ -2,7 +2,7 @@
 
 import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
 import { MAX_NAME_LENGTH } from "../../shared/lib/input-policy";
-import type { RepositoryError } from "../../shared/lib/project-repository";
+import type { RepositoryError } from "../../features/project-workflow/lib/project-repository";
 import styles from "./measure-workspace.module.css";
 
 type WorkspaceEmptyProps = {

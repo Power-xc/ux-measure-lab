@@ -11,7 +11,7 @@ import { evaluateFleetWave } from "../../experiment-fleet/lib/evaluate-fleet-wav
 import { parseFunnelCsv } from "../../funnel-import/lib/parse-funnel-csv.ts";
 import { analyzeFunnel } from "../../measure-loop/lib/calculate-funnel.ts";
 import { buildExperimentReport } from "../../report/lib/build-experiment-report.ts";
-import { createEmptyWorkspace } from "../../../shared/lib/project-repository.ts";
+import { createEmptyWorkspace } from "./project-repository.ts";
 import { getProjectProgress, validateExperimentPlan } from "./project-workflow.ts";
 import {
   applyContext,

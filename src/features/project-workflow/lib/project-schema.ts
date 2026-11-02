@@ -1,10 +1,10 @@
-import type { Decision } from "../../entities/decision/model.ts";
-import type { ExperimentEvaluation, ExperimentEvaluationInput, ExperimentPlan, ExperimentResult, RateCount } from "../../entities/experiment/model.ts";
-import { evaluateExperiment } from "../../features/experiment/lib/evaluate-experiment.ts";
-import { analyzeFunnel } from "../../features/measure-loop/lib/calculate-funnel.ts";
-import { validateExperimentPlan } from "../../features/project-workflow/lib/project-workflow.ts";
+import type { Decision } from "../../../entities/decision/model.ts";
+import type { ExperimentEvaluation, ExperimentEvaluationInput, ExperimentPlan, ExperimentResult, RateCount } from "../../../entities/experiment/model.ts";
+import { evaluateExperiment } from "../../experiment/lib/evaluate-experiment.ts";
+import { analyzeFunnel } from "../../measure-loop/lib/calculate-funnel.ts";
+import { validateExperimentPlan } from "./project-workflow.ts";
 import { isFleetState } from "./fleet-schema.ts";
-import { MAX_TEXT_LENGTH, validateProductUrl } from "./input-policy.ts";
+import { MAX_TEXT_LENGTH, validateProductUrl } from "../../../shared/lib/input-policy.ts";
 import { isProjectStateConsistent } from "./project-invariants.ts";
 import {
   CONFIDENCE_LEVELS,
@@ -19,7 +19,7 @@ import {
   type Project,
   type ProjectContext,
   type WorkspaceState,
-} from "../../entities/project/model.ts";
+} from "../../../entities/project/model.ts";
 
 type UnknownRecord = Record<string, unknown>;
 

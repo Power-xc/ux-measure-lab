@@ -17,7 +17,7 @@ import {
   saveWorkspace,
   WORKSPACE_STORAGE_KEY,
   type RepositoryError,
-} from "../../../shared/lib/project-repository";
+} from "../lib/project-repository";
 
 type WorkspaceController = {
   workspace: WorkspaceState;

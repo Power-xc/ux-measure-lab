@@ -1,4 +1,4 @@
-import { WORKSPACE_SCHEMA_VERSION, type WorkspaceState } from "../../entities/project/model.ts";
+import { WORKSPACE_SCHEMA_VERSION, type WorkspaceState } from "../../../entities/project/model.ts";
 import { isWorkspaceState } from "./project-schema.ts";
 
 // 저장 key는 최초 배포 이름을 유지한다. 이름의 v1은 스키마 version이 아니라 key 식별자이며,
