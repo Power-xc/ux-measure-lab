@@ -66,7 +66,3 @@ export function analyzeFunnel(steps: readonly FunnelStep[]): FunnelAnalysis {
     largestDropOff: findLargestDropOff(metrics),
   };
 }
-
-export function calculateFunnel(steps: readonly FunnelStep[]): FunnelMetric[] {
-  return analyzeFunnel(steps).steps;
-}
