@@ -7,7 +7,7 @@ import type {
   NormalizedMeasurement,
 } from "../contract.ts";
 import type { SegmentedFunnelRow } from "./aggregate-reader.ts";
-import { createConfidenceBand, MINIMUM_SAMPLE_SIZE, type MeasureDependencies } from "./measure-service.ts";
+import { createConfidenceBand, MINIMUM_SAMPLE_SIZE, type MeasureDependencies } from "./measure-confidence.ts";
 
 type SegmentsQuery = Extract<MeasurementQuery, { capability: "segments" }>;
 

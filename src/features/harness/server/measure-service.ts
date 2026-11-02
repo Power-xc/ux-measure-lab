@@ -2,7 +2,6 @@ import type { FunnelStep } from "../../../entities/measurement/model.ts";
 import { analyzeFunnel, FunnelValidationError } from "../../measure-loop/lib/calculate-funnel.ts";
 import type {
   AdapterContext,
-  ConfidenceBand,
   MeasurementOutcome,
   MeasurementProvenance,
   MeasurementQuery,
@@ -11,19 +10,24 @@ import type {
   TimeWindow,
 } from "../contract.ts";
 import type { AggregateReader, InteractionSignal } from "./aggregate-reader.ts";
+import {
+  CONFIDENCE_HIGH_MINIMUM,
+  CONFIDENCE_MEDIUM_MINIMUM,
+  MINIMUM_SAMPLE_SIZE,
+  createConfidenceBand,
+  type MeasureDependencies,
+} from "./measure-confidence.ts";
 import { measureSegments } from "./measure-segments.ts";
 
-export const MINIMUM_SAMPLE_SIZE = 30;
-export const CONFIDENCE_MEDIUM_MINIMUM = 100;
-export const CONFIDENCE_HIGH_MINIMUM = 1_000;
+export {
+  CONFIDENCE_HIGH_MINIMUM,
+  CONFIDENCE_MEDIUM_MINIMUM,
+  MINIMUM_SAMPLE_SIZE,
+  createConfidenceBand,
+  type MeasureDependencies,
+};
 
 type SupportedQuery = Extract<MeasurementQuery, { capability: "funnel" | "interaction" | "paths" | "segments" }>;
-export type MeasureDependencies = {
-  reader: AggregateReader;
-  meta: SourceAdapterMeta;
-  context: AdapterContext;
-  queryHash: string;
-};
 
 export type MeasureService = {
   measure(query: MeasurementQuery, context: AdapterContext): Promise<MeasurementOutcome>;
@@ -74,19 +78,6 @@ export async function createQueryHash(query: MeasurementQuery): Promise<string> 
   const canonical = JSON.stringify(stableValue(normalizeMeasurementQuery(query)));
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-export function createConfidenceBand(sampleSize: number): ConfidenceBand {
-  if (!Number.isSafeInteger(sampleSize) || sampleSize < 0) throw new RangeError("표본 수는 0 이상의 안전한 정수여야 합니다.");
-  const level = sampleSize >= CONFIDENCE_HIGH_MINIMUM
-    ? "high"
-    : sampleSize >= CONFIDENCE_MEDIUM_MINIMUM ? "medium" : "low";
-  return {
-    level,
-    sampleSize,
-    basis: `관찰 표본 ${sampleSize}개를 기준으로 한 순서형 등급입니다.`,
-    limits: "표본 규모만 반영하며 인과관계나 통계적 유의성을 나타내지 않습니다.",
-  };
 }
 
 // segments 측정은 provenance.segment가 요청 dimension에 속한 값이어야 한다. 나머지 유형은 단일 라벨과 정확히 일치해야 한다.
