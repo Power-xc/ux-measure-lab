@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="832" height="452" viewBox="-4 -4 832 452" role="img" aria-label="질문이 근거와 가설을 거쳐 실험 사전 등록에 이르고, A/B 판정이나 함대 웨이브 판정 뒤 사람의 결정과 리포트로 끝난다">
+<defs><marker id="head-dark" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="0" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#9198a1" text-anchor="start">측정 · 진단</text>
+<text x="0" y="124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#9198a1" text-anchor="start">판정</text>
+<text x="0" y="406" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#9198a1" text-anchor="start">결정</text>
+<path d="M185 50 L217 50" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M402 50 L434 50" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M527 78 L527 128" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M452 166 L360 166" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<text x="397" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="400" fill="#9198a1" text-anchor="middle">A/B 한 쌍</text>
+<path d="M602 166 L650 166" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<text x="626" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="400" fill="#9198a1" text-anchor="middle">변형 함대</text>
+<path d="M800 156 L808 156 Q814 156 814 162 L814 170 Q814 176 808 176 L800 176" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M725 198 L725 262" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<text x="733" y="234" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="400" fill="#9198a1" text-anchor="start">후보 1개 수렴</text>
+<path d="M650 294 L590 294" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<text x="620" y="290" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="400" fill="#9198a1" text-anchor="middle">통과</text>
+<path d="M725 326 L725 380" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<text x="733" y="357" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="400" fill="#9198a1" text-anchor="start">미달</text>
+<path d="M275 198 L275 380" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M510 326 L510 394 Q510 400 504 400 L375 400" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<path d="M650 424 L375 424" fill="none" stroke="#656c76" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-dark)"/>
+<rect x="0.5" y="22.5" width="185" height="56" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="92.5" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">harness</text>
+<text x="92.5" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">질문 입력</text>
+<text x="92.5" y="71" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">스킬 ↔ 어댑터 매칭</text>
+<rect x="217.5" y="22.5" width="185" height="56" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="309.5" y="46" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">Evidence</text>
+<text x="309.5" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">provenance · 표본 · 기간</text>
+<rect x="434.5" y="22.5" width="186" height="56" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="527" y="46" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">diagnosis</text>
+<text x="527" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">마찰 후보 → 가설 확정</text>
+<path d="M527.5 128.5 L602.5 166.5 L527.5 204.5 L452.5 166.5 Z" fill="none" stroke="#3d444d" stroke-width="1" stroke-linejoin="round"/>
+<text x="527" y="162" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">Experiment</text>
+<text x="527" y="179" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">사전 등록</text>
+<rect x="190.5" y="134.5" width="170" height="64" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="275" y="154" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">evaluate-experiment</text>
+<text x="275" y="171" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">Before/After 판정</text>
+<text x="275" y="187" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">threshold · guardrail</text>
+<rect x="650.5" y="134.5" width="150" height="64" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="725" y="154" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">evaluate-fleet-wave</text>
+<text x="725" y="171" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">guardrail 컷</text>
+<text x="725" y="187" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">delta 순위 · 재수집</text>
+<rect x="650.5" y="262.5" width="150" height="64" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="725" y="282" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">plan-next-wave</text>
+<text x="725" y="299" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">확정 웨이브</text>
+<text x="725" y="315" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">신규 표본</text>
+<rect x="430.5" y="262.5" width="160" height="64" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="510" y="290" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">confirmed</text>
+<text x="510" y="307" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">승격 확정</text>
+<rect x="650.5" y="380.5" width="150" height="64" rx="8" fill="none" stroke="#3d444d" stroke-width="1"/>
+<text x="725" y="408" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">confirmation_failed</text>
+<text x="725" y="425" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">강등</text>
+<rect x="175.5" y="380.5" width="200" height="64" rx="8" fill="none" stroke="#4493f8" stroke-width="1"/>
+<text x="275" y="400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#4493f8" text-anchor="middle">Decide</text>
+<text x="275" y="417" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">사람의 결정 기록</text>
+<text x="275" y="433" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#9198a1" text-anchor="middle">→ Markdown 리포트</text>
+</svg>

@@ -44,22 +44,18 @@ One project moves from context to decision along the step list on the left. A ve
 | 7    | Validate   | Enter before/after values for a practical-threshold verdict                          | Verdict                      |
 | 8    | Decide     | Record the human decision and next action, export the report                         | Decision, Markdown report    |
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  Q["Question<br/>measurement harness · skill ↔ adapter match"] --> E["Evidence<br/>provenance · sample · period"] --> HY["Diagnosis · friction candidate<br/>hypothesis"]
-  HY --> P{"Pre-register experiment"}
-  P -->|"A/B pair"| S["Before/After<br/>threshold ·<br/>guardrail verdict"]
-  P -->|"variant fleet"| W["Wave verdict<br/>guardrail cut<br/>delta rank · resample"]
-  W -->|"several survivors"| W
-  W -->|"one candidate left"| C["Confirmation wave<br/>on fresh samples"]
-  C -->|"passes"| PR["Promoted"]
-  C -->|"fails"| DM["Demoted"]
-  S & PR & DM --> HD["Human decision<br/>→ Markdown report"]
-
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  class Q entry
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/measure-loop-en-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/measure-loop-en-light.svg"
+    alt="A question becomes evidence and a hypothesis, then a pre-registered experiment judged as an A/B pair or a fleet of waves, and ends in a recorded human decision and report"
+  />
+</picture>
 
 ## Features
 
@@ -297,68 +293,31 @@ The UI, the report and the JSON backup use these values with one meaning each.
 
 Detailed design lives in [Architecture](docs/architecture.md) and the ADRs. This section keeps the overall picture and the reasons behind the main decisions.
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  subgraph Visitor["Product in production · visitor browser"]
-    SDK["collector SDK<br/>consent gate<br/>PII masking"]
-    REC["replay recorder<br/>separate consent<br/>injected engine"]
-  end
-  subgraph API["Next.js server · same codebase"]
-    ING["/api/ingest"]
-    RING["/api/replay<br/>/ingest"]
-  end
-  subgraph Store["Storage · short retention"]
-    SB[("Supabase<br/>events 90 days<br/>replay 30 days")]
-    UP[("Upstash<br/>durable rate limit")]
-  end
-  SDK --> ING
-  REC --> RING
-  ING & RING --> SB
-  ING -.-> UP
-  RING -.-> UP
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/ingest-en-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/ingest-en-light.svg"
+    alt="The collector SDK sends events to /api/ingest and the replay recorder sends recordings to /api/replay/ingest. Events land in Supabase, recordings in an in-memory store, and both APIs rate-limit through Upstash"
+  />
+</picture>
 
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  classDef store fill:#2da44e,stroke:#1a7f37,color:#fff
-  class SDK,REC entry
-  class SB,UP store
-  style Visitor fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style API fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style Store fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-```
-
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  subgraph Owner["Owner workspace · browser"]
-    WS["8-step Measure Loop<br/>fleet mode<br/>wave prefill"]
-    ENG["Deterministic engine<br/>pure TS<br/>funnel · fleet"]
-    LS[("localStorage v3<br/>verdicts recomputed<br/>on restore")]
-  end
-  subgraph API["Next.js server · same codebase"]
-    MEAS["/api/harness<br/>/measure"]
-    RREAD["/api/replay<br/>/recordings<br/>player-frame<br/>owner-only"]
-    AIR["/api/ai<br/>/diagnosis<br/>fleet-variants<br/>deterministic fallback"]
-  end
-  SB[("Supabase<br/>events 90 days<br/>replay 30 days")]
-  PH["PostHog · read-only"]
-  WS --- ENG
-  WS <--> LS
-  WS --> MEAS & RREAD & AIR
-  MEAS & RREAD --> SB
-  PH --> MEAS
-
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  classDef ai fill:#8957e5,stroke:#6e40c9,color:#fff
-  classDef store fill:#2da44e,stroke:#1a7f37,color:#fff
-  classDef ext fill:#bf8700,stroke:#9a6700,color:#fff
-  class WS entry
-  class AIR ai
-  class SB,LS store
-  class PH ext
-  style Owner fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style API fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/workspace-en-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/workspace-en-light.svg"
+    alt="The owner workspace finishes all eight steps with a pure TS engine and localStorage in the browser, and calls the harness, replay and AI routes only when needed"
+  />
+</picture>
 
 ### Why this stack
 

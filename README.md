@@ -42,22 +42,18 @@
 | 7    | Validate   | 변경 전후 값을 넣으면 practical threshold로 판정합니다                              | verdict                |
 | 8    | Decide     | 사람의 결정과 다음 행동을 기록하고 리포트를 내보냅니다                              | 결정 · Markdown 리포트 |
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  Q["질문 입력<br/>measurement harness · 스킬 ↔ 어댑터 매칭"] --> E["Evidence<br/>provenance · 표본 · 기간"] --> HY["진단 · 마찰 후보<br/>가설 확정"]
-  HY --> P{"실험 사전 등록"}
-  P -->|"A/B 한 쌍"| S["Before/After<br/>threshold ·<br/>guardrail 판정"]
-  P -->|"변형 함대"| W["웨이브 판정<br/>guardrail 컷<br/>delta 순위 · 재수집"]
-  W -->|"생존 변형 다수"| W
-  W -->|"후보 1개 수렴"| C["신규 표본<br/>확정 웨이브"]
-  C -->|"통과"| PR["승격 확정"]
-  C -->|"미달"| DM["강등"]
-  S & PR & DM --> HD["사람의 결정 기록<br/>→ Markdown 리포트"]
-
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  class Q entry
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/measure-loop-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/measure-loop-light.svg"
+    alt="질문이 근거와 가설을 거쳐 실험 사전 등록에 이르고, A/B 판정이나 함대 웨이브 판정 뒤 사람의 결정과 리포트로 끝납니다"
+  />
+</picture>
 
 ## 기능
 
@@ -293,68 +289,31 @@ OPENAI_MODEL=gpt-5.6-luna
 
 상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 전체 그림과 핵심 결정의 이유만 둡니다.
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  subgraph Visitor["운영 제품 · 방문자 브라우저"]
-    SDK["collector SDK<br/>동의 게이트<br/>PII 마스킹"]
-    REC["replay recorder<br/>별도 동의<br/>엔진 주입"]
-  end
-  subgraph API["Next.js 서버 · same codebase"]
-    ING["/api/ingest"]
-    RING["/api/replay<br/>/ingest"]
-  end
-  subgraph Store["저장 · 짧은 보존"]
-    SB[("Supabase<br/>events 90일<br/>replay 30일")]
-    UP[("Upstash<br/>durable rate limit")]
-  end
-  SDK --> ING
-  REC --> RING
-  ING & RING --> SB
-  ING -.-> UP
-  RING -.-> UP
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/ingest-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/ingest-light.svg"
+    alt="collector SDK는 /api/ingest로 이벤트를, replay recorder는 /api/replay/ingest로 녹화를 보냅니다. 이벤트는 Supabase에, 녹화는 in-memory 저장소에 쌓이고 두 API 모두 Upstash로 호출 수를 제한합니다"
+  />
+</picture>
 
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  classDef store fill:#2da44e,stroke:#1a7f37,color:#fff
-  class SDK,REC entry
-  class SB,UP store
-  style Visitor fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style API fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style Store fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-```
-
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
-flowchart TD
-  subgraph Owner["Owner 워크스페이스 · 브라우저"]
-    WS["8단계 Measure Loop<br/>함대 모드<br/>웨이브 프리필"]
-    ENG["결정적 엔진<br/>순수 TS<br/>funnel · fleet"]
-    LS[("localStorage v3<br/>복원 시<br/>판정 재계산")]
-  end
-  subgraph API["Next.js 서버 · same codebase"]
-    MEAS["/api/harness<br/>/measure"]
-    RREAD["/api/replay<br/>/recordings<br/>player-frame<br/>owner-only"]
-    AIR["/api/ai<br/>/diagnosis<br/>fleet-variants<br/>결정적 fallback"]
-  end
-  SB[("Supabase<br/>events 90일<br/>replay 30일")]
-  PH["PostHog · read-only"]
-  WS --- ENG
-  WS <--> LS
-  WS --> MEAS & RREAD & AIR
-  MEAS & RREAD --> SB
-  PH --> MEAS
-
-  classDef entry fill:#2f81f7,stroke:#1f6feb,color:#fff
-  classDef ai fill:#8957e5,stroke:#6e40c9,color:#fff
-  classDef store fill:#2da44e,stroke:#1a7f37,color:#fff
-  classDef ext fill:#bf8700,stroke:#9a6700,color:#fff
-  class WS entry
-  class AIR ai
-  class SB,LS store
-  class PH ext
-  style Owner fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-  style API fill:transparent,stroke:#8c959f,stroke-dasharray:4 3
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/workspace-dark.svg
+    "
+  />
+  <img
+    src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/docs/diagrams/workspace-light.svg"
+    alt="Owner 워크스페이스는 브라우저의 순수 TS 엔진과 localStorage로 8단계를 끝내고, 필요할 때 harness·replay·AI 라우트를 호출합니다"
+  />
+</picture>
 
 ### 스택 선정 이유
 

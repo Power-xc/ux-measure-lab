@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="828" height="332" viewBox="-4 -4 828 332" role="img" aria-label="Owner 워크스페이스는 브라우저의 순수 TS 엔진과 localStorage로 8단계를 끝내고, 필요할 때 harness·replay·AI 라우트를 호출한다">
+<defs><marker id="head-light" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="0" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#818b98" text-anchor="start">Owner 브라우저</text>
+<text x="290" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#818b98" text-anchor="start">Next.js · app/api</text>
+<text x="540" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11" font-weight="600" fill="#818b98" text-anchor="start">저장 · 외부</text>
+<path d="M100 136 L100 78" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M80 208 L80 252" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M120 252 L120 208" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M200 156 L239 156 Q245 156 245 150 L245 66 Q245 60 251 60 L290 60" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M200 172 L290 172" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M200 188 L239 188 Q245 188 245 194 L245 282 Q245 288 251 288 L290 288" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M470 46 L540 46" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M470 74 L499 74 Q505 74 505 80 L505 100 Q505 106 511 106 L540 106" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M470 172 L540 172" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<path d="M470 288 L540 288" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head-light)"/>
+<rect x="0.5" y="22.5" width="200" height="56" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="100" y="46" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">features/*/lib</text>
+<text x="100" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">순수 TS 결정적 엔진</text>
+<rect x="0.5" y="136.5" width="200" height="72" rx="8" fill="none" stroke="#0969da" stroke-width="1"/>
+<text x="100" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#0969da" text-anchor="middle">measure-workspace</text>
+<text x="100" y="177" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">8단계 Measure Loop</text>
+<text x="100" y="193" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">함대 모드 · 웨이브 프리필</text>
+<path d="M0.5 258.5 a100 6 0 0 1 200 0 v60 a100 6 0 0 1 -200 0 z M0.5 258.5 a100 6 0 0 0 200 0" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="100" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">localStorage</text>
+<text x="100" y="297" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">schema v3</text>
+<text x="100" y="313" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">복원 시 판정 재계산</text>
+<rect x="290.5" y="24.5" width="180" height="72" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="380" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">/api/harness/measure</text>
+<text x="380" y="73" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">스킬 ↔ 어댑터 실행</text>
+<rect x="290.5" y="144.5" width="180" height="56" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="380" y="168" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">/api/replay/recordings</text>
+<text x="380" y="185" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">player-frame · owner-only</text>
+<rect x="290.5" y="260.5" width="180" height="56" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="380" y="284" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">/api/ai/*</text>
+<text x="380" y="301" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">diagnosis · fleet-variants</text>
+<path d="M540.5 25.5 a140 6 0 0 1 280 0 v42 a140 6 0 0 1 -280 0 z M540.5 25.5 a140 6 0 0 0 280 0" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="680" y="46" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">Supabase</text>
+<text x="680" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">aggregate RPC · 설정 시</text>
+<rect x="540.5" y="79.5" width="280" height="54" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="680" y="102" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">PostHog</text>
+<text x="680" y="119" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">read-only 어댑터</text>
+<path d="M540.5 151.5 a140 6 0 0 1 280 0 v42 a140 6 0 0 1 -280 0 z M540.5 151.5 a140 6 0 0 0 280 0" fill="none" stroke="#d1d9e0" stroke-width="1"/>
+<text x="680" y="172" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">ReplayStore</text>
+<text x="680" y="189" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">in-memory · dogfood 전용</text>
+<rect x="540.5" y="260.5" width="280" height="56" rx="8" fill="none" stroke="#d1d9e0" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="680" y="276" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">AI provider</text>
+<text x="680" y="293" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">OpenAI Responses API · 선택</text>
+<text x="680" y="309" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif" font-size="11.5" font-weight="400" fill="#59636e" text-anchor="middle">키 없으면 결정적 fallback</text>
+</svg>
