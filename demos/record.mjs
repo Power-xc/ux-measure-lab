@@ -48,6 +48,11 @@ async function recordScene(scene) {
 }
 
 const wanted = process.argv.slice(2);
+const unknown = wanted.filter((name) => !SCENES.some((scene) => scene.name === name));
+if (unknown.length) {
+  console.error(`알 수 없는 장면: ${unknown.join(", ")} (가능: ${SCENES.map((scene) => scene.name).join(", ")})`);
+  process.exit(1);
+}
 const targets = wanted.length ? SCENES.filter((s) => wanted.includes(s.name)) : SCENES;
 await assertReachable();
 await mkdir(OUT_DIR, { recursive: true });

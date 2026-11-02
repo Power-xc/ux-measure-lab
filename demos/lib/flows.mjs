@@ -67,7 +67,7 @@ export async function fillHypothesis(s) {
   await s.field(panel.getByLabel(/관찰/), "책을 등록한 사용자의 64%가 첫 노트 없이 이탈한다", { first: true });
   await s.field(panel.getByLabel(/변경안/), "책 등록 직후 한 줄 노트 입력창을 보여준다");
   await s.field(panel.getByLabel(/예상 행동 변화/), "등록 직후 첫 노트 작성이 늘어난다");
-  await s.field(panel.getByLabel(/Guardrail metric/), "책 등록 완료율");
+  await s.field(panel.getByLabel(/Guardrail metric/), "책 등록 이탈률");
   await s.field(panel.getByLabel(/대안 설명/), "책 등록 UI가 노트 기능을 가린다");
   await s.field(panel.getByLabel(/누락 근거/), "등록 후 화면 체류 시간");
   await s.click(panel.getByRole("button", { name: /가설 확정/ }));
@@ -84,16 +84,16 @@ export async function preregister(s) {
   await s.click(s.page.getByRole("button", { name: /결과 입력하기/ }), { settle: 0.3 });
 }
 
-// 변경 전 1500/2500(60%) → 변경 후 1625/2500(65%)
+// 퍼널의 가입→첫 노트 18.6%와 맞춘 값. 변경 전 465/2500(18.6%) → 변경 후 600/2500(24%), +5.4pp
 export async function enterResults(s) {
   const panel = section(s.page, /실험 결과와 판정 근거/);
   const summary = panel.locator("summary").filter({ hasText: /결과 입력/ });
   if (!(await panel.locator("details[open]").isVisible())) await s.click(summary, { settle: 0.3 });
   const converted = panel.getByLabel(/전환 사용자/);
   const total = panel.getByLabel(/전체 사용자/);
-  await s.value(converted.first(), 1500);
+  await s.value(converted.first(), 465);
   await s.value(total.first(), 2500);
-  await s.value(converted.nth(1), 1625);
+  await s.value(converted.nth(1), 600);
   await s.value(total.nth(1), 2500);
   await s.value(panel.getByLabel(/실제 관찰 기간 \(일\)/), 14);
   await s.click(panel.getByRole("button", { name: /결과 계산/ }), { settle: 1.5 });
@@ -103,15 +103,17 @@ export async function recordDecision(s) {
   await s.click(s.page.getByRole("button", { name: /사람의 결정 기록 →/ }), { settle: 0.3 });
   const panel = section(s.page, /실험 판정과 제품 결정/);
   await s.click(panel.getByRole("radio", { name: /Adopt/ }), { settle: 0.3 });
-  await s.field(panel.getByLabel(/결정 근거/), "첫 노트 작성률이 5%p 올랐고 guardrail은 유지됐다", { first: true });
+  await s.field(panel.getByLabel(/결정 근거/), "첫 노트 작성률이 5.4%p 올랐고 guardrail은 유지됐다", { first: true });
   await s.field(panel.getByLabel(/다음 행동/), "신규 가입자 10%에게 먼저 배포한다");
   await s.click(panel.getByRole("button", { name: /Decision 저장/ }), { settle: 1.5 });
 }
 
+// DEMO_REPORT_PATH를 주면 내려받은 리포트를 그 경로에 저장한다(README 인용용).
 export async function openReport(s) {
   const dl = s.page.waitForEvent("download");
   await s.click(s.page.getByRole("button", { name: /Markdown 리포트/ }), { settle: 0.3 });
-  await dl;
+  const download = await dl;
+  if (process.env.DEMO_REPORT_PATH) await download.saveAs(process.env.DEMO_REPORT_PATH);
 }
 
 // 장면 시작 전 상태 준비 (녹화하지 않음)

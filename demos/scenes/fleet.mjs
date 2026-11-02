@@ -5,8 +5,6 @@ const VARIANTS = "A안 | 책 등록 직후 노트 입력창 노출\nB안 | 등�
 
 export const fleet = {
   name: "fleet",
-  viewport: { width: 1120, height: 700 },
-  encode: { width: 1120 },
   async run(s) {
     const { page } = s;
     await prepare(s, "experiment");

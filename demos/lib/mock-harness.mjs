@@ -1,4 +1,5 @@
 // 네트워크 없이 harness 측정 성공 응답을 흉내 낸다 (e2e/harness.spec.ts와 같은 방식).
+// 관찰 문구는 서버(measure-service · measure-segments)가 만드는 문장과 같게 둔다.
 // 서버 코드의 해시 함수를 그대로 가져와 클라이언트의 provenance 검증을 통과시킨다.
 const SRC = "../../src/features/harness";
 const { parseMeasurementRequest } = await import(`${SRC}/lib/measurement-query.ts`);
@@ -11,6 +12,7 @@ const SEGMENT_COUNTS = [
   { value: "v-1", entered: 400, completed: 56 },
   { value: "v-2", entered: 400, completed: 42 },
 ];
+const rate = (entered, completed) => Math.round((completed / entered) * 1000) / 10;
 const reject = (route) => route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ ok: false, code: "invalid_response", message: "invalid fixture" }) });
 
 function provenance(parsed, capability, query, queryHash, segment) {
@@ -26,7 +28,7 @@ async function funnelOutcome(parsed, query) {
     ok: true, degraded: [],
     measurements: [{
       metricLabel: "퍼널 전환 및 이탈",
-      observation: "첫 책 등록에서 첫 노트 작성 사이의 이탈률은 63.9%로 가장 크게 관찰되었습니다.",
+      observation: "첫 책 등록에서 첫 노트 작성 사이의 이탈률은 63.9%로 관찰되었습니다.",
       sourceKind: "calculated", direction: "context",
       values: { enteredUsers: ENTERED, completedUsers: COMPLETED, totalConversion: 10.2, largestDropOffRate: 63.9 },
       provenance: provenance(parsed, "funnel", query, queryHash, "전체 사용자"),
@@ -41,9 +43,9 @@ async function segmentsOutcome(parsed, query) {
     ok: true, degraded: [],
     measurements: SEGMENT_COUNTS.map(({ value, entered, completed }) => ({
       metricLabel: `변형 전환 · ${value}`,
-      observation: `${query.dimension}=${value} 표본 ${entered}명 중 ${completed}명이 마지막 단계에 도달했습니다.`,
+      observation: `${query.dimension}=${value} 표본 ${entered}명 중 ${completed}명이 마지막 단계에 도달해 전환율 ${rate(entered, completed)}%로 관찰되었습니다.`,
       sourceKind: "calculated", direction: "context",
-      values: { enteredUsers: entered, completedUsers: completed, conversionRate: Math.round((completed / entered) * 1000) / 10 },
+      values: { enteredUsers: entered, completedUsers: completed, conversionRate: rate(entered, completed) },
       provenance: provenance(parsed, "segments", query, queryHash, `${query.dimension}=${value}`),
       confidence: createConfidenceBand(entered),
     })),
