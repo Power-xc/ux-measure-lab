@@ -28,7 +28,12 @@ export async function POST(request: Request): Promise<Response> {
 
   const declaredLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
   if (declaredLength > MAX_REQUEST_BYTES) return jsonResponse({ error: "request_too_large" }, { status: 413 });
-  const text = await readBoundedBody(request, MAX_REQUEST_BYTES);
+  let text: string | null;
+  try {
+    text = await readBoundedBody(request, MAX_REQUEST_BYTES);
+  } catch {
+    return jsonResponse({ error: "invalid_request" }, { status: 400 });
+  }
   if (text === null) return jsonResponse({ error: "request_too_large" }, { status: 413 });
 
   let value: unknown;
