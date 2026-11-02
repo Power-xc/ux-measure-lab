@@ -1,0 +1,6 @@
+# CLI 배포 업로드에서 빼는 로컬 산출물 (빌드에 쓰지 않음)
+/demos/.frames/
+/test-results/
+/playwright-report/
+.env*
+!.env.example
