@@ -263,7 +263,7 @@ signup,가입 완료,540
 core_action,핵심 행동,210
 ```
 
-The in-app **샘플 사용** (use sample) and **CSV 템플릿 다운로드** (download template) buttons get you started without a file.
+The in-app **샘플 사용** (use sample) and **템플릿 받기** (download template) buttons get you started without a file.
 
 ### Optional AI
 
