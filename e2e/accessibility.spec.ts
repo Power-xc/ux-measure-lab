@@ -11,7 +11,7 @@ test("accessibility: skip link and keyboard navigation", async ({ page }) => {
 
   // Verify the skip link exists with correct text
   const skipLink = page.getByRole("link", { name: /본문으로 건너뛰기/i });
-  await expect(skipLink).toBeTruthy();
+  await expect(skipLink).toHaveCount(1);
 
   // Test 1: Verify skip link has correct href
   const skipLinkHref = await skipLink.getAttribute("href");
@@ -77,5 +77,5 @@ test("accessibility: focus visibility and interactive elements", async ({ page }
 
   // Verify buttons have accessible names (text content)
   const nextButtonText = await nextButton.textContent();
-  expect(nextButtonText).toBeTruthy();
+  expect(nextButtonText?.trim()).not.toBe("");
 });
