@@ -1,8 +1,8 @@
 # Measurement Harness — 통합 Spec
 
 > **작성일:** 2026-07-15 · **작성자:** Power-xc
-> **상태:** 사용자 검토 대기 · 구현 전
-> **입력:** [research-sdk.md](research-sdk.md) · [research-ingest.md](research-ingest.md) · [research-harness.md](research-harness.md)
+> **상태:** 구현·검증 완료 (단계 0–4, 증거는 [verification.md](../verification.md)) · 단계 5는 [Session Replay spec](session-replay.md)
+> **입력:** [collector-sdk](../research/collector-sdk.md) · [ingest](../research/ingest.md) · [measurement-harness](../research/measurement-harness.md)
 
 ## 1. 정의 — 왜 만드는가
 
@@ -23,16 +23,16 @@ UX MeasureLab을 "CSV를 수동 연결하는 evidence-to-decision 워크스페�
 - 무결성 계층(Project·verdict·Decision — localStorage + JSON backup)과 증거 계층(행동 이벤트 — 서버, 손실 허용, 90일 보존)을 분리하고, 무결성 데이터는 절대 ingest 파이프라인을 통과하지 않는다.
 - 동의 없는 수집은 없다: `requireConsent` 기본 on, 입력값 절대 미수집, 마스킹 기본, GPC/DNT 존중, anon_id 삭제 경로 제공.
 
-## 3. 범위 (Wave)
+## 3. 범위 (구현 단계)
 
-| Wave | 내용 | 산출 |
+| 단계 | 내용 | 산출 |
 |---|---|---|
 | 0 | Source Adapter 계약 + Evidence 스키마 v2 (additive `sourceRef`, v1→v2 무손실 마이그레이션) | `src/features/harness/` 계약 타입·검증·마이그레이션 + 단위 테스트 |
 | 1 | 수집 SDK (`packages/collector/`) — pv·click·rage·dead·scroll·route·session, 의존성 0, gzip ≤10KB 목표 | SDK 번들 + jsdom 단위 + Playwright 통합 |
 | 2 | Ingest — `POST /api/ingest`, Supabase Postgres(events/sessions/sites), durable rate limit, 보존 잡 | route + 마이그레이션 SQL + 검증 순서 테스트 |
 | 3 | 하네스 스킬 + first-party 어댑터 — 질문 유형 판정(사용자 확정), 스킬 카탈로그 7종 중 funnel·interaction·paths 우선 | 스킬 라우팅 UI + 어댑터 1호 + 계약 테스트 |
 | 4 | PostHog read-only 커넥터 (어댑터 2호) + 계약 검증(1호와 동일 질문 → 동일 스키마) | 어댑터 2호 + 교차 계약 테스트 |
-| 5 | Session replay — 별도 spec. 사전 동의·기본 마스킹·짧은 보존이 선행 조건 | 본 spec 범위 밖 |
+| 5 | Session replay — [별도 spec](session-replay.md). 사전 동의·기본 마스킹·짧은 보존이 선행 조건 | 본 spec 범위 밖 |
 
 제외(불변): 통계적 유의성·p-value·세그먼트 자동 판정, heatmap 자체 집계, feature flag, 실시간 스트리밍 대시보드.
 
@@ -63,14 +63,14 @@ UX MeasureLab을 "CSV를 수동 연결하는 evidence-to-decision 워크스페�
 | HAC-11 | 표본·기간 부족 시 수치를 만들지 않고 `insufficient_sample`을 표시한다 |
 | HAC-12 | 기존 53개 단위 테스트·E2E 6종·전체 품질 게이트가 계속 통과한다 |
 
-## 6. 사용자 결정 필요 (구현 전 승인)
+## 6. 결정 기록
 
-| ID | 결정 | 권장 |
+| ID | 결정 | 상태 |
 |---|---|---|
-| D-101 | Supabase 프로젝트 프로비저닝 (Wave 2 전제, Free→Pro 기준선) | 승인 필요 — 계정·리전(권장: 가까운 리전) |
-| D-102 | Upstash Redis 도입 (durable rate limit·dedup) | 승인 필요 — 무료 tier로 시작 |
-| D-103 | dogfood 대상: 본인 운영 제품 1개에 사이트 키 수동 프로비저닝 | 승인 필요 — 대상 제품 지정 |
-| D-104 | `@supabase/supabase-js` 등 서버 의존성 추가 (SDK 자체는 의존성 0 유지) | 승인 필요 |
+| D-101 | Supabase 프로젝트 프로비저닝 (단계 2 전제, Free→Pro 기준선) | 완료 — 연결·마이그레이션 2종 실행 확인 (LIVE-001, 2026-07-15) |
+| D-102 | Upstash Redis 도입 (durable rate limit·dedup) | 완료 — `PING` 확인 (LIVE-001) |
+| D-103 | dogfood 대상: 본인 운영 제품 1개에 사이트 키 수동 프로비저닝 | 미결 — 대상 제품 미지정 (사이트 프로비저닝·SDK 배치 수집은 LIVE-002로 확인) |
+| D-104 | `@supabase/supabase-js` 등 서버 의존성 추가 (SDK 자체는 의존성 0 유지) | 미채택 — Supabase·Upstash를 REST로 직접 호출해 서버 의존성을 추가하지 않음 ([architecture](../architecture.md)) |
 
 ## 7. 리스크 (요약)
 

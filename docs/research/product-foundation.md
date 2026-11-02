@@ -1,6 +1,6 @@
 # UX MeasureLab 제품 기반 리서치
 
-> **보존 상태:** 구현 전 리서치 기록이다. 현재 구현 delta는 [`../personal-product-v1/research.md`](../personal-product-v1/research.md)를 따른다.
+> **보존 상태:** 구현 전 리서치 기록이다. 현재 구현 delta는 [`personal-v1.md`](personal-v1.md)를 따른다.
 
 > **조사일:** 2026-07-14
 > **결정 질문:** MVP가 행동 데이터 수집 엔진을 직접 만들지, 기존 분석 도구 위의 의사결정 레이어로 시작할지 결정한다.

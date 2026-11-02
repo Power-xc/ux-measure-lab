@@ -1,8 +1,8 @@
 # Measurement Harness — First-party SDK v1 설계 리서치
 
 > **작성일:** 2026-07-14
-> **상태:** 설계 (로드맵 `First-party SDK` 항목, README.md:23) · 미구현
-> **근거:** README 로드맵(README.md:17,23,27), `features/personal-product-v1/spec.md`, `docs/architecture.md`·`docs/security.md`·`docs/data-model.md`, 외부 공식 문서
+> **상태:** 설계 리서치 · 구현됨 (`packages/collector/`, 현재 상태는 [Measurement Harness spec](../specs/measurement-harness.md)·[verification](../verification.md))
+> **근거:** README 로드맵(README.md:17,23,27), [`personal-v1.md`](../specs/personal-v1.md), `docs/architecture.md`·`docs/security.md`·`docs/data-model.md`, 외부 공식 문서
 > **범위 고지:** 이벤트 수집만 설계한다. 세션 녹화(replay)는 v1 범위 밖이며 [§10](#10-후속-단계)에서 후속으로만 다룬다.
 
 ## 1. 결정 배경과 범위
@@ -23,7 +23,7 @@ session replay · heatmap 집계 · feature flag · traffic allocation
 · form-field 분석 · web vitals · 외부 도구 실시간 동기화
 ```
 
-`features/personal-product-v1/spec.md:66`은 자체 event SDK·replay·feature flag를 Personal v1 제외로 명시했다. 이 SDK는 그 제외를 로드맵 단계로 승격시키는 설계이며, replay는 여전히 별도 단계로 남긴다(`README.md:27`).
+[`personal-v1.md`](../specs/personal-v1.md)은 자체 event SDK·replay·feature flag를 Personal v1 제외로 명시했다. 이 SDK는 그 제외를 로드맵 단계로 승격시키는 설계이며, replay는 여전히 별도 단계로 남긴다(`README.md:27`).
 
 ### 제품 원칙 정합
 
@@ -330,7 +330,7 @@ packages/collector/
 
 ### 8.2 외부 의존성 0 원칙
 
-런타임 의존성 0으로 간다. 셀렉터 빌더·UUID(`crypto.randomUUID`)·transport 모두 표준 웹 API로 손수 구현한다. 이는 저장소가 이미 지키는 "새 test library 추가 없이 `node:test`로 구성"(`features/personal-product-v1/research.md:67`) 및 supply-chain 최소화(`docs/security.md:83`) 기조와 일치한다.
+런타임 의존성 0으로 간다. 셀렉터 빌더·UUID(`crypto.randomUUID`)·transport 모두 표준 웹 API로 손수 구현한다. 이는 저장소가 이미 지키는 "새 test library 추가 없이 `node:test`로 구성"([`personal-v1.md`](personal-v1.md)) 및 supply-chain 최소화(`docs/security.md:83`) 기조와 일치한다.
 
 ### 8.3 테스트 전략
 

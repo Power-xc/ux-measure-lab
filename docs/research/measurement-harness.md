@@ -1,6 +1,6 @@
 # Measurement Harness와 Source Adapter 계약 리서치
 
-> **보존 상태:** 구현 전 설계 리서치다. 로드맵 항목이며 단계별 spec과 실행 검증을 통과해야 "현재 구현"으로 이동한다.
+> **보존 상태:** 구현 전 설계 리서치 기록이다. 구현 결과는 [Measurement Harness spec](../specs/measurement-harness.md)과 [verification](../verification.md)을 따른다.
 > **조사일:** 2026-07-14
 > **결정 질문:** 사용자가 UX 질문을 입력하면 필요한 측정이 자동 구성되어 정규화된 `Evidence`로 Measure Loop에 공급되는 구조를, 8단계 루프와 결정적 계산 경계를 바꾸지 않고 어떻게 얹을 것인가.
 

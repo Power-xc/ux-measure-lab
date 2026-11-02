@@ -1,18 +1,18 @@
 # UX MeasureLab Ingest 서버·저장 아키텍처 리서치
 
 > **작성일:** 2026-07-14
-> **상태:** 설계 (구현 전) · 로드맵 "Ingest 서버" 단계
+> **상태:** 설계 리서치 · 구현됨 (현재 상태는 [Measurement Harness spec](../specs/measurement-harness.md)·[verification](../verification.md))
 > **결정 질문:** 자체 SDK가 보내는 행동 이벤트를 어디에 어떻게 저장하고, 인증 없이도 남용되지 않는 공개 쓰기 경계를 어떻게 만드는가.
-> **근거:** 사용자 요청, [`../../README.md`](../../README.md) 방향 표, [`../../docs/architecture.md`](../../docs/architecture.md), [`../../docs/security.md`](../../docs/security.md), [`../../docs/data-model.md`](../../docs/data-model.md), [`../../src/shared/server/request-guards.ts`](../../src/shared/server/request-guards.ts), 두 개의 기존 same-origin POST route.
+> **근거:** 사용자 요청, [`../../README.md`](../../README.md) 방향 표, [`../architecture.md`](../architecture.md), [`../security.md`](../security.md), [`../data-model.md`](../data-model.md), [`../../src/shared/server/request-guards.ts`](../../src/shared/server/request-guards.ts), 두 개의 기존 same-origin POST route.
 
 ## 0. 요약
 
 이 설계는 저장소에 **서버 영속성을 처음 도입**한다. 지금까지 제품 데이터는 `localStorage`에만 있었고 서버 route는 상태를 소유하지 않았다. 행동 이벤트는 그 원칙의 예외가 아니라, **등급이 다른 두 번째 데이터 계층**으로 분리해서 도입한다.
 
-- 스토리지 추천: **Supabase Postgres** 하나로 확정. 월 10만~100만 이벤트 규모에서 퍼널·경로·세션 집계는 Postgres가 여유롭게 처리하고, ClickHouse 계열은 이 규모에서 운영 비용만 늘린다. 저장소가 이미 "localStorage repository를 Supabase adapter로 교체 가능하게 둔다"([`../personal-product-v1/research.md`](../personal-product-v1/research.md))는 결정을 내려 두었고, Supabase RLS가 뒤따르는 인증·멀티테넌시 로드맵과 곧바로 연결된다.
+- 스토리지 추천: **Supabase Postgres** 하나로 확정. 월 10만~100만 이벤트 규모에서 퍼널·경로·세션 집계는 Postgres가 여유롭게 처리하고, ClickHouse 계열은 이 규모에서 운영 비용만 늘린다. 저장소가 이미 "localStorage repository를 Supabase adapter로 교체 가능하게 둔다"([`personal-v1.md`](personal-v1.md))는 결정을 내려 두었고, Supabase RLS가 뒤따르는 인증·멀티테넌시 로드맵과 곧바로 연결된다.
 - 공개 쓰기 경계: 사이트 키(공개 write 토큰) + **사이트별 Origin allowlist** + durable rate limit + 봇 필터 + bounded payload. 인증 없는 익명 쓰기 엔드포인트는 없다.
 - 핵심 경계 이동: 수집은 **cross-origin이 정상**이다. 기존 두 route의 `hasAllowedOrigin`/`isCrossSite` same-origin 가드를 **그대로 재사용하면 실제 트래픽을 전부 차단**한다. Ingest는 의도적으로 다른 경계를 쓴다(§4.4).
-- 데이터 등급: 행동 스트림은 **손실 허용·근사 증거**다. 전환율·delta·verdict·Decision을 소유하는 결정적 계층(현재 `localStorage`·서버 계산)은 그대로 무결성 계층으로 남는다. 이 분리가 "행동 신호를 원인이 아닌 관찰로 취급한다"([`../product-foundation/research.md`](../product-foundation/research.md))는 제품 원칙을 인프라에서 강제한다.
+- 데이터 등급: 행동 스트림은 **손실 허용·근사 증거**다. 전환율·delta·verdict·Decision을 소유하는 결정적 계층(현재 `localStorage`·서버 계산)은 그대로 무결성 계층으로 남는다. 이 분리가 "행동 신호를 원인이 아닌 관찰로 취급한다"([`product-foundation.md`](product-foundation.md))는 제품 원칙을 인프라에서 강제한다.
 
 | 결정 | 선택 | 근거 |
 |---|---|---|
@@ -29,7 +29,7 @@
 
 ### 1.1 무엇이 바뀌고 무엇이 유지되는가
 
-현재 아키텍처([`../../docs/architecture.md`](../../docs/architecture.md))의 명시적 전제는 "서버 DB, 인증, background worker와 자체 event collector는 없다"이다. 이 설계는 그 전제 중 **event collector와 그 저장소만** 연다. 나머지는 유지한다.
+현재 아키텍처([`../architecture.md`](../architecture.md))의 명시적 전제는 "서버 DB, 인증, background worker와 자체 event collector는 없다"이다. 이 설계는 그 전제 중 **event collector와 그 저장소만** 연다. 나머지는 유지한다.
 
 ```text
 유지 (무결성 계층 · 결정적)
@@ -115,8 +115,8 @@
 
 **F-ING-001 — 스토리지는 Supabase Postgres.**
 - `fact`: 100만/월은 평균 1 events/sec 미만이고 주 쿼리는 기간 스코프 집계다. Postgres가 인덱스·파티션·롤업으로 충분히 처리한다.
-- `fact`: 저장소는 이미 "browser storage를 versioned repository interface 뒤에 둬 추후 Supabase adapter로 교체 가능하게 한다"고 결정했다([`../personal-product-v1/research.md`](../personal-product-v1/research.md)).
-- `inference`: Supabase RLS·Auth는 [`../../docs/data-model.md`](../../docs/data-model.md)의 "Deferred server model"(User·membership·tenant·RLS)과 직접 연결되어, 인증 도입 시 읽기 경계를 재설계 없이 확장한다.
+- `fact`: 저장소는 이미 "browser storage를 versioned repository interface 뒤에 둬 추후 Supabase adapter로 교체 가능하게 한다"고 결정했다([`personal-v1.md`](personal-v1.md)).
+- `inference`: Supabase RLS·Auth는 [`../data-model.md`](../data-model.md)의 "Deferred server model"(User·membership·tenant·RLS)과 직접 연결되어, 인증 도입 시 읽기 경계를 재설계 없이 확장한다.
 - `inference`: ClickHouse 계열은 이 규모에서 운영·학습 비용만 추가한다. 대규모의 종착지로는 유효하나 지금 도입할 근거가 없다.
 - `applicability`: 채택. 관계형 제약·RLS·관리형 운영·기존 결정 정합의 합이 가장 크다.
 
@@ -151,7 +151,7 @@ create table sites (
 );
 ```
 
-- **키는 해시로만 저장**한다([`../../docs/security.md`](../../docs/security.md)의 "secret server env" 원칙 연장). 검증 시 요청 키를 해시해 `key_hash`와 대조한다.
+- **키는 해시로만 저장**한다([`../security.md`](../security.md)의 "secret server env" 원칙 연장). 검증 시 요청 키를 해시해 `key_hash`와 대조한다.
 - `allowed_origins`가 CORS 경계의 데이터 소스다(§4.4). 사이트마다 다르며 ux-measure-lab 자신의 host와 무관하다.
 - `key_prefix`는 UI에서 어떤 키인지 식별하고 회전(rotate)할 때만 쓰며 인증에는 쓰지 않는다.
 
@@ -242,7 +242,7 @@ create table sessions (
    방문자 삭제 요청: anon_id 기준 DELETE (consent-first 원칙의 운영 대응)
 ```
 
-`anon_id` 기준 삭제 경로를 처음부터 두는 이유는 [`../../README.md`](../../README.md)·[`../../docs/security.md`](../../docs/security.md)의 "consent-first collection"과 "짧은 보존" 출시 조건 때문이다. 수집 계층은 삭제 가능해야 출시할 수 있다.
+`anon_id` 기준 삭제 경로를 처음부터 두는 이유는 [`../../README.md`](../../README.md)·[`../security.md`](../security.md)의 "consent-first collection"과 "짧은 보존" 출시 조건 때문이다. 수집 계층은 삭제 가능해야 출시할 수 있다.
 
 ---
 
@@ -387,7 +387,7 @@ untrusted-by-default를 유지하되, **손실 허용**을 위해 배치 전체�
 | rate 초과 | 429 | `{ error: "rate_limited" }` + `Retry-After` |
 | 서버 과부하 | 503 | `{ error: "unavailable" }` (SDK가 재시도 후 드롭) |
 
-부분 드롭에 202를 쓰는 이유: 하나의 잘못된 이벤트가 정상 이벤트의 수집을 막지 않아야 하며(손실 허용 계층), 이는 CSV 파서가 "행 오류를 표시하되 기존 유효 데이터는 유지"하는 [`../../docs/architecture.md`](../../docs/architecture.md) 패턴과 같은 철학이다.
+부분 드롭에 202를 쓰는 이유: 하나의 잘못된 이벤트가 정상 이벤트의 수집을 막지 않아야 하며(손실 허용 계층), 이는 CSV 파서가 "행 오류를 표시하되 기존 유효 데이터는 유지"하는 [`../architecture.md`](../architecture.md) 패턴과 같은 철학이다.
 
 ---
 
@@ -423,7 +423,7 @@ untrusted-by-default를 유지하되, **손실 허용**을 위해 배치 전체�
 ```
 
 - 정책은 사이트 설정 `is_bot_dropped`로 제어한다. 기본은 **명백한 봇은 ingest에서 드롭**(저장 절약), 경계 사례는 `is_bot=true` 플래그로 저장해 집계에서 제외하되 감사 가능하게 남긴다.
-- 자연어·UA 휴리스틱은 완전한 증명이 아니다([`../../docs/security.md`](../../docs/security.md)의 injection 필터 한계와 같은 성격). 오탐·미탐을 전제로 플래그 기반으로 운영한다.
+- 자연어·UA 휴리스틱은 완전한 증명이 아니다([`../security.md`](../security.md)의 injection 필터 한계와 같은 성격). 오탐·미탐을 전제로 플래그 기반으로 운영한다.
 
 ---
 
@@ -442,7 +442,7 @@ sites.project_ref  →  dogfood 단계: 로컬 워크스페이스의 project id 
 - 읽기(대시보드)는 이 단계에서 인증이 없으므로, **집계 결과를 서버에 공개 노출하지 않는다.** 두 가지 중 하나로 운영한다.
   1. 집계 쿼리를 로컬 개발/신뢰 환경에서만 실행하고 결과를 evidence로 워크스페이스에 수동 반입(현재 CSV 업로드와 동형).
   2. 또는 읽기 API에 `service_role` 수준의 서버 전용 키를 두고 same-origin 워크스페이스에서만 호출(기존 `hasAllowedOrigin` 경계 재사용) — 단, 인증 전까지 사이트 간 격리는 코드 레벨 필터에만 의존하므로 개인 단일 사용 범위로 제한한다.
-- 이 임시성은 [`../../docs/data-model.md`](../../docs/data-model.md)가 "Personal v1 모델을 그대로 multi-tenant schema로 간주하지 않는다"고 못박은 것과 일치한다.
+- 이 임시성은 [`../data-model.md`](../data-model.md)가 "Personal v1 모델을 그대로 multi-tenant schema로 간주하지 않는다"고 못박은 것과 일치한다.
 
 ### 6.2 공개 write 경계 vs 인증 read 경계 분리
 
@@ -469,7 +469,7 @@ sites.project_ref  →  dogfood 단계: 로컬 워크스페이스의 project id 
 ```
 
 - Supabase RLS를 쓰기에까지 적용하지 않는 이유: ingest는 인증된 사용자 세션이 없는 익명 append이므로, RLS 대신 사이트 키·Origin·rate가 방어를 담당한다. 삽입은 `service_role` 또는 사이트 키를 검증한 서버 route가 수행한다.
-- 이 경로는 [`../../docs/data-model.md`](../../docs/data-model.md)의 "Deferred server model"(actor, tenant boundary, retention, deletion, audit, migration 별도 설계)을 그대로 채우며, retention·deletion은 이미 §3.4에서 선반영했다.
+- 이 경로는 [`../data-model.md`](../data-model.md)의 "Deferred server model"(actor, tenant boundary, retention, deletion, audit, migration 별도 설계)을 그대로 채우며, retention·deletion은 이미 §3.4에서 선반영했다.
 
 ---
 
@@ -507,7 +507,7 @@ SDK 측 (at-least-once 시도)
 | bot-drop 비율 | 필터 오탐·미탐 감시 | ingest 카운터 |
 | 사이트별 월 이벤트 | 쿼터·비용 예측 | 집계 잡 |
 
-[`../../docs/security.md`](../../docs/security.md)의 "server audit·abuse telemetry 없음" 잔여 위험을 이 최소셋이 부분적으로 닫는다. 비밀·원본 UA·전체 IP는 로그에 남기지 않는다(pseudonymous·host만).
+[`../security.md`](../security.md)의 "server audit·abuse telemetry 없음" 잔여 위험을 이 최소셋이 부분적으로 닫는다. 비밀·원본 UA·전체 IP는 로그에 남기지 않는다(pseudonymous·host만).
 
 ### 7.3 예상 월 비용
 
@@ -539,13 +539,13 @@ Hosting     : Vercel production (현행) + Supabase 프로젝트
 - 대시보드 읽기 앱과 공개 쓰기 앱을 서로 다른 배포 단위로 분리 (경계 §6.2와 정합).
 ```
 
-[`../../docs/architecture.md`](../../docs/architecture.md)의 "서버 DB나 조직 기능을 추가할 때는 별도 spec과 migration·authorization 설계가 필요하다"는 조건에 따라, 실제 마이그레이션·RLS·시드 스크립트는 이 리서치 뒤의 spec 단계에서 확정한다.
+[`../architecture.md`](../architecture.md)의 "서버 DB나 조직 기능을 추가할 때는 별도 spec과 migration·authorization 설계가 필요하다"는 조건에 따라, 실제 마이그레이션·RLS·시드 스크립트는 이 리서치 뒤의 spec 단계에서 확정한다.
 
 ---
 
 ## 9. 위험
 
-- **공개 쓰기 남용:** 사이트 키가 클라이언트에 노출된다. 방어는 Origin allowlist·durable rate·봇 필터·사이트 월 상한의 합이며, 어느 하나도 단독으로 완전하지 않다. edge rate limit 추가를 출시 전 게이트로 둔다([`../../docs/security.md`](../../docs/security.md)의 "외부 공개 배포 전 인증 또는 edge rate limit" 규칙).
+- **공개 쓰기 남용:** 사이트 키가 클라이언트에 노출된다. 방어는 Origin allowlist·durable rate·봇 필터·사이트 월 상한의 합이며, 어느 하나도 단독으로 완전하지 않다. edge rate limit 추가를 출시 전 게이트로 둔다([`../security.md`](../security.md)의 "외부 공개 배포 전 인증 또는 edge rate limit" 규칙).
 - **in-memory limiter 오용:** 기존 limiter를 그대로 serverless ingest에 쓰면 사실상 무제한이 된다. durable 백엔드 교체가 구현 필수 조건이다(§4.5).
 - **CORS 과다 허용:** `Access-Control-Allow-Origin: *`로 넓히면 사이트 격리가 깨진다. 반드시 사이트 allowlist와 대조한 Origin만 반사한다(§4.4).
 - **decompression bomb:** 압축 본문은 해제 후 크기를 재차 bound하지 않으면 메모리 폭증 위험. 해제 상한을 명시했다(§4.2).

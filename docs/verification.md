@@ -157,7 +157,7 @@ AI-001~010의 provider mock, injection fixture와 client validation이 위 자�
 ## Deliberate limits
 
 - 통계적 유의성, p-value, segment 자동 판정은 구현하지 않았다.
-- 실서비스 연결은 `NOT_RUN`: Supabase·Upstash·PostHog 실계정 호출은 프로비저닝 전이다. env 미설정 시 안전기본값(빈 스토어 → 수집 0, not_configured 폴백)이 게이트로 검증되어 있고, 실연결 후 dogfood 실측이 다음 검증 단계다.
+- 실서비스 연결은 로컬 실계정으로 검증되었다(LIVE-001~004, 2026-07-15). 공개 배포는 env 미설정 안전기본값(빈 스토어 → 수집 0, not_configured 폴백)으로 동작하며 이는 게이트로 검증되어 있다.
 - PostHog 질의 빌더는 순수 함수로 분리되어 있으나 실제 엔드포인트 계약은 첫 실호출 전 공식 스키마로 재확인해야 한다(`NOT_CHECKED` 주석 기준).
 - session replay는 **loopback dogfood 범위로 활성화**되었다(gate 1~9가 이 범위에서 닫힘, [replay PIA](replay-privacy-impact.md) §6 owner 서명). owner가 자기 loopback 세션을 녹화·재생하며 30일 hard delete·owner-only read·네트워크 차단 sandbox가 강제된다. **cohort 확대·제3자 방문자 녹화·공개 배포는 서명 범위 밖**으로 PIA §4 확정·서명 전까지 열지 않으며, `recordings` capability도 registry·catalog에 미등록이다. read·player 경계는 loopback+development 전용이라 공개 데모(`production`)와 production E2E에서는 닫혀 있고, sandbox 재생은 BROWSER-009(vendored 번들)와 REPLAY-LIVE-04(실 녹화)로 검증했다. Supabase replay store는 미구현이라 dogfood 저장은 in-memory(단일 dev 프로세스)이며, 다중 인스턴스 durable 저장은 cohort 확대와 함께 붙인다.
 - 실제 OpenAI provider 품질·비용은 `NOT_RUN`; mock contract와 fallback만 release gate다.

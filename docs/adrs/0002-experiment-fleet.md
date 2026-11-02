@@ -5,7 +5,7 @@
 
 ## Context
 
-LLM이 변형 생성 비용을 0에 수렴시키면서 실험의 병목이 생성에서 트래픽과 판정으로 이동했다. 업계는 이미 실험의 단위를 바꾸고 있다 — Yum!/KFC는 Braze AI Decisioning으로 연 2억 건 이상의 상호작용을 AI가 결정하게 했고, Booking.com은 상시 1,000개 이상의 동시 실험을 운영하며, Statsig·Amplitude·Optimizely는 실험 생성·배분 자동화를 제품화했다([research](../../features/experiment-fleet/research.md)).
+LLM이 변형 생성 비용을 0에 수렴시키면서 실험의 병목이 생성에서 트래픽과 판정으로 이동했다. 업계는 이미 실험의 단위를 바꾸고 있다 — Yum!/KFC는 Braze AI Decisioning으로 연 2억 건 이상의 상호작용을 AI가 결정하게 했고, Booking.com은 상시 1,000개 이상의 동시 실험을 운영하며, Statsig·Amplitude·Optimizely는 실험 생성·배분 자동화를 제품화했다([research](../research/experiment-fleet.md)).
 
 같은 조사에서 두 가지가 함께 확인됐다. 첫째, 보정 없는 대량 실험은 오탐을 양산한다(다중 비교, 승자의 저주, novelty effect). 둘째, 상용 도구들은 밴딧 확률 배분이나 AI 판정으로 이동하면서 **결정적이고 감사 가능한 판정**이라는 영역을 비워 두고 있다 — 이는 본 제품의 기존 차별점이다.
 

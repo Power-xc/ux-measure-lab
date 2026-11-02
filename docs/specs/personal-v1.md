@@ -2,7 +2,7 @@
 
 > **작성일:** 2026-07-14
 > **상태:** Personal Product v1 구현·검증 완료
-> **근거:** 사용자 요청, `features/product-foundation/spec.md`, 현재 실행형 prototype 감사
+> **근거:** 사용자 요청, [제품 기반 리서치](../research/product-foundation.md), 현재 실행형 prototype 감사
 
 ## 1. 목적과 목표
 
