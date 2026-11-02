@@ -154,16 +154,18 @@ export function FleetWaveForm(props: FleetWaveFormProps) {
       {props.funnelStepIds.length >= 2 ? (
         <details className={styles.resultEditor}>
           <summary>측정에서 채우기 — first-party 변형별 관찰</summary>
-          <div className={styles.threeColumns}>
-            <Field helper="이벤트 props 키" htmlFor="fleet-prefill-dimension" label="변형 배정 속성 키"><input id="fleet-prefill-dimension" maxLength={100} onChange={(event) => setDimension(event.target.value)} value={dimension} /></Field>
-            <Field helper="기준선 arm의 값" htmlFor="fleet-prefill-baseline" label="기준선 값"><input id="fleet-prefill-baseline" maxLength={100} onChange={(event) => setBaselineValue(event.target.value)} value={baselineValue} /></Field>
+          <div className={styles.prefillFields}>
+            <div className={styles.twoColumns}>
+              <Field helper="이벤트 props 키" htmlFor="fleet-prefill-dimension" label="변형 배정 속성 키"><input id="fleet-prefill-dimension" maxLength={100} onChange={(event) => setDimension(event.target.value)} value={dimension} /></Field>
+              <Field helper="기준선 arm의 값" htmlFor="fleet-prefill-baseline" label="기준선 값"><input id="fleet-prefill-baseline" maxLength={100} onChange={(event) => setBaselineValue(event.target.value)} value={baselineValue} /></Field>
+            </div>
             <div className={styles.twoColumns}>
               <Field htmlFor="fleet-prefill-from" label="관찰 시작"><input id="fleet-prefill-from" onChange={(event) => setPrefillWindow((current) => ({ ...current, from: event.target.value }))} type="datetime-local" value={prefillWindow.from} /></Field>
               <Field htmlFor="fleet-prefill-to" label="관찰 종료"><input id="fleet-prefill-to" onChange={(event) => setPrefillWindow((current) => ({ ...current, to: event.target.value }))} type="datetime-local" value={prefillWindow.to} /></Field>
             </div>
+            <button aria-busy={prefillBusy} className={styles.secondaryButton} disabled={prefillBusy} onClick={prefillFromMeasurement} type="button">{prefillBusy ? "측정 중…" : "변형별 관찰 불러오기"}</button>
+            {prefillNote ? <p className={styles.observationNote} role="status">{prefillNote}</p> : null}
           </div>
-          <button aria-busy={prefillBusy} className={styles.secondaryButton} disabled={prefillBusy} onClick={prefillFromMeasurement} type="button">{prefillBusy ? "측정 중…" : "변형별 관찰 불러오기"}</button>
-          {prefillNote ? <p className={styles.observationNote} role="status">{prefillNote}</p> : null}
         </details>
       ) : null}
       <div className={styles.resultGrid}>

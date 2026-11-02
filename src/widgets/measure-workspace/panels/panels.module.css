@@ -8,7 +8,7 @@
 .panelHeader > strong { flex: 0 0 auto; padding: var(--space-6) var(--space-10); border: 1px solid #d7e4ff; border-radius: var(--radius-circle); background: #eef4ff; color: #1d4ed8; font-size: var(--text-caption-medium); text-transform: capitalize; }
 .form { display: grid; gap: var(--space-20); margin-top: var(--space-24); padding: var(--space-24); border: 1px solid #dfe7f3; border-radius: var(--radius-12); background: #ffffff; }
 .field { display: grid; gap: var(--space-8); min-width: 0; }
-.field label { color: #263653; font-size: var(--text-label-small); font-weight: var(--font-weight-semibold); }
+.field label { color: #263653; font-size: var(--text-label-small); font-weight: var(--font-weight-semibold); word-break: keep-all; }
 .field input, .field select, .field textarea { width: 100%; min-height: 42px; padding: var(--space-10) var(--space-12); border: 1px solid #cbd5e4; border-radius: var(--radius-8); background: #ffffff; color: #0a1a3a; font: inherit; }
 .field textarea { resize: vertical; }
 .field input:hover, .field select:hover, .field textarea:hover { border-color: #93a3bc; }
@@ -102,6 +102,9 @@
 .tableWrap th:first-child, .tableWrap td:first-child { text-align: left; }
 .tableWrap th { background: #f8faff; color: #53617a; font-size: var(--text-caption-medium); }
 .tableWrap tbody tr:last-child > * { border-bottom: 0; }
+.tableWrap td input { width: 100%; min-width: 72px; max-width: 128px; min-height: 36px; padding: var(--space-6) var(--space-10); border: 1px solid #cbd5e4; border-radius: var(--radius-8); background: #ffffff; color: #0a1a3a; font: inherit; text-align: right; }
+.tableWrap td input:hover { border-color: #93a3bc; }
+.tableWrap td input:focus { border-color: #2563ff; }
 .funnelTableCard { background: #ffffff; }
 .riskRow { background: #fff3f4; }
 .riskRow > * { color: #a8232e; }
@@ -169,7 +172,7 @@
 .harnessValueList dt { color: #64718a; font-size: var(--text-caption-medium); }
 .harnessValueList dd { margin: var(--space-4) 0 0; font-size: var(--text-title-small); font-weight: var(--font-weight-bold); }
 
-.resultGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.resultGrid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .resultGrid fieldset { min-width: 0; margin: 0; padding: var(--space-16); border: 1px solid #dfe7f3; border-radius: var(--radius-12); }
 .resultGrid legend { padding: 0 var(--space-6); color: #263653; font-weight: var(--font-weight-semibold); }
 .resultGrid fieldset > .field + .field { margin-top: var(--space-12); }
@@ -217,6 +220,8 @@
 .resultEditor { margin-top: var(--space-16); padding: var(--space-16); border: 1px solid #dfe7f3; border-radius: var(--radius-10, 10px); background: #ffffff; }
 .resultEditor summary { cursor: pointer; color: #1d4ed8; font-weight: var(--font-weight-semibold); }
 .resultEditor .resultEntryForm { margin-bottom: 0; border: 0; }
+.prefillFields { display: grid; gap: var(--space-12); margin-top: var(--space-12); }
+.prefillFields > button { justify-self: start; }
 
 .decisionEvidenceStrip { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: var(--space-24); }
 .decisionEvidenceStrip strong { font-size: var(--text-title-medium); }
