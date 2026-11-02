@@ -1,124 +1,46 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/assets/demos/hero.gif" width="800" alt="독서 기록 앱의 첫 노트 작성률을 두고 프로젝트 생성부터 제품 맥락, KPI, 퍼널 CSV, 이탈 진단, 가설, 실험 사전 등록, 판정, 사람의 결정까지 8단계를 차례로 진행하는 모습">
+
 # UX MeasureLab
 
-> Test experiences. Measure impact.
+**UX 질문을 측정으로, 측정을 사전 등록한 실험과 사람의 결정으로 잇는 워크스페이스.**
 
-**Demo:** [ux-measure-lab.vercel.app](https://ux-measure-lab.vercel.app) · **Repository:** [Power-xc/ux-measure-lab](https://github.com/Power-xc/ux-measure-lab)
+「가입 퍼널 어디서 새나요?」 같은 질문을 넣으면 맞는 측정을 골라 출처 붙은 근거로 남깁니다.<br>
+전환율 · delta · 판정은 코드가 계산하고, AI는 후보만 내고, 결정은 사람이 기록합니다.
 
-> 데모는 서버 수집 없이 동작하는 공개 빌드입니다. CSV·샘플 데이터로 8단계 Measure Loop와 harness UI 전체를 체험할 수 있고, first-party 수집·어댑터 측정은 자신의 환경에 배포해 사용합니다.
+[![Quality](https://github.com/Power-xc/ux-measure-lab/actions/workflows/quality.yml/badge.svg)](https://github.com/Power-xc/ux-measure-lab/actions/workflows/quality.yml)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-111)
+![storage](https://img.shields.io/badge/storage-local--first-111)
+[![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-UX를 데이터로 개선하려면 오늘은 배워야 할 도구가 너무 많습니다. 퍼널은 분석 도구에, 클릭과 마찰 신호는 히트맵 도구에, 세션 맥락은 녹화 도구에, A/B 테스트는 또 다른 도구에 흩어져 있습니다. 각 도구의 개념·설정·권한을 익혀야 하고, 그렇게 얻은 조각난 결과를 사람이 직접 이어 붙여야 비로소 결정이 나옵니다.
+**[라이브 데모](https://ux-measure-lab.vercel.app)** · [Measure Loop](#measure-loop) · [기능](#기능) · [빠른 시작](#빠른-시작) · [아키텍처](#아키텍처) · [English](README.en.md)
 
-그리고 실험의 전제 자체가 바뀌었습니다. A/B 테스트는 시안을 만드는 비용이 비싸던 시대의 도구입니다 — 두세 개를 겨우 만들었으니 두세 개만 비교하면 됐습니다. AI가 변형 후보를 사실상 무한히 만들어내는 지금, 귀한 것은 시안이 아니라 **트래픽과 신뢰할 수 있는 판정**입니다. 후보 100개를 만들 수 있는 시대의 질문은 "무엇을 테스트할까"가 아니라 "무엇을 근거로 믿고 버릴까"입니다.
+</div>
 
-UX MeasureLab은 이 두 문제를 하나의 workspace로 풉니다. "가입 퍼널 어디서 사용자가 새는가" 같은 질문을 입력하면 필요한 측정이 자동으로 구성되고 — measurement harness — 그 결과는 검증 가능한 가설, 사전 등록된 실험(단일 A/B 또는 변형 함대), 사람이 기록하는 결정으로 이어집니다.
+## 한눈에
 
-```text
-질문 → 측정 자동 구성 → Evidence → 가설
-→ 실험 사전 등록 (A/B 한 쌍, 또는 변형 함대)
-→ 결정적 판정 (웨이브 컷 → 신규 표본 확정)
-→ 사람의 결정
-```
+- **질문으로 시작하는 측정** — 질문 유형에 맞는 측정 스킬과 데이터 소스를 짝지어 실행하고, 결과를 표본 · 기간 · 출처가 붙은 Evidence 초안으로 보여 줍니다. 프로젝트에 넣는 것은 사람이 「Evidence로 적용」을 눌렀을 때뿐입니다.
+- **판정은 코드가** — 전환율, delta, guardrail, verdict를 TypeScript가 계산합니다. 백업을 복원할 때도 저장된 판정을 다시 계산해 보고, 맞지 않으면 복원을 거부합니다.
+- **기준을 먼저 등록** — 성공 · 실패 기준, 최소 표본, 기간, guardrail, 종료 규칙을 등록해야 판정이 열립니다. 표본이나 기간이 모자라면 결과는 「근거 부족」으로 남습니다.
+- **변형이 많으면 함대로** — 변형 여러 개를 한 번에 등록해 웨이브마다 guardrail 위반과 하위 순위를 걸러 냅니다. 마지막 1개는 새 표본의 확정 웨이브를 통과해야 승격됩니다.
+- **자체 수집과 기존 도구** — 의존성 없는 수집 SDK(동의 게이트 · 입력값 미수집)와 PostHog read-only 어댑터의 결과가 같은 Evidence 스키마로 들어옵니다.
+- **로컬 우선** — 프로젝트는 브라우저에 자동 저장되고 JSON으로 백업 · 복원합니다. AI를 켜지 않아도 8단계를 끝까지 쓸 수 있습니다.
 
-AI는 의사결정을 대신하지 않고 근거에 연결된 원인 후보, 가설 대안과 변형 후보만 제안합니다. 전환율, delta, guardrail, verdict 같은 계산 가능한 값은 전부 TypeScript 코드가 결정하며 최종 결정은 사람이 기록합니다.
+## Measure Loop
 
-## 전체 여정을 본다
+왼쪽 단계 표시를 따라 한 프로젝트를 처음부터 결정까지 진행합니다. 판정은 사전 등록한 실험이 있어야 계산되고, 리포트는 결정까지 기록해야 내보낼 수 있습니다.
 
-페이지 한 장의 스냅샷으로는 사용성을 판단할 수 없습니다. UX MeasureLab이 다루는 관찰 단위는 운영 중인 제품 전체에서 벌어지는 실제 사용 여정입니다.
-
-- 사용자가 어떤 요소를 클릭하고 어느 단계에서 이탈하는지
-- 세션이 페이지를 넘어 어떻게 이어지고 어디서 끊기는지
-- rage click, dead click 같은 마찰 신호가 어느 화면에 쌓이는지
-- 필요하면 사전 동의 기반 세션 녹화로 해당 맥락을 owner 환경에서 재생하는지 (마스킹·30일 보존·네트워크 차단 sandbox)
-
-행동 데이터는 스크립트 한 줄로 설치되는 first-party SDK가 수집하고, 이미 사용 중인 분석 도구는 read-only 어댑터로 연결합니다. 소스가 무엇이든 동일한 evidence 스키마로 정규화되어 같은 결정 루프에 공급됩니다.
-
-## Measurement harness
-
-측정 능력과 데이터 소스를 하나의 생태계로 등록해 두고, 질문이 들어오면 필요한 조합만 발동시키는 실행 구조입니다.
-
-```text
-질문 유형 판정
-→ 측정 스킬 선택 (퍼널 이탈 · 마찰 신호 · 여정 연속성 · 전후 비교 …)
-→ 스킬이 요구하는 데이터 능력 ↔ 어댑터 capability 자동 매칭
-→ 결정적 측정 실행 → 정규화 Evidence (provenance·표본·기간 포함)
-→ 기존 Measure Loop의 진단·가설·실험·결정 단계로 공급
-```
-
-- **선언과 매칭** — 측정 스킬은 필요한 데이터 능력을 선언하고, 어댑터는 제공 가능한 능력을 선언합니다. 조합은 자동으로 구성되며 실행 전 사용자가 확인합니다.
-- **계약 기반 확장** — first-party SDK, PostHog 커넥터, 이후 추가되는 어떤 소스든 같은 어댑터 계약을 구현하면 기존 스킬이 재작성 없이 그대로 동작합니다.
-- **버전과 마이그레이션** — evidence 스키마는 버전 관리되고, 스키마가 진화해도 기존 프로젝트 데이터는 마이그레이션으로 호환을 유지합니다. 현재 저장소가 이미 versioned schema 검증 위에서 동작하며 같은 원칙을 확장합니다.
-- **성장하는 생태계** — 스킬과 어댑터가 추가될수록 같은 질문이 더 풍부한 증거로 답해집니다. 도구를 갈아탈 때마다 제품을 재설계하는 것이 아니라, 생태계에 어댑터 하나를 더하는 방식으로 성장합니다.
-
-## 실험의 단위를 바꾼다 — A/B 쌍에서 실험 함대로
-
-AI가 변형 생성 비용을 0에 수렴시키면서 실험의 병목은 만들기에서 트래픽과 판정으로 이동했습니다. 업계는 이미 캠페인당 두세 개가 아니라 수백~수천 개 단위로 실험합니다 — Booking.com은 상시 1,000개 이상의 동시 실험을 운영하고, Yum!(KFC)은 연 2억 건 이상의 상호작용을 AI decisioning에 맡겼습니다. 그러나 보정 없는 대량 실험은 오탐 공장이 됩니다(다중 비교·승자의 저주·novelty effect).
-
-업계 도구들은 이 문제를 밴딧의 확률 배분(Statsig Autotune)이나 상시 가동 AI 에이전트(Amplitude)로 풉니다. UX MeasureLab의 대답은 **experiment fleet**입니다 — 사전 등록과 결정적 계산을 대량 실험의 규모로 확장합니다.
-
-| | 밴딧 · AI 판정 도구 | UX MeasureLab experiment fleet |
-|---|---|---|
-| 변형 후보 | AI가 생성·자동 투입 | AI는 제안만, 사람이 검토해 등록 |
-| 트래픽 배분 | 확률적 재배분 (재현 불가) | 사전 등록 정책의 웨이브 컷 (결정적) |
-| 판정 | 통계 추정 또는 AI 판단 | practical threshold를 코드가 계산, 저장된 판정은 복원 시 재계산 대조 |
-| 승자 확정 | 같은 데이터로 선언 | 신규 표본 확정 웨이브 (승자의 저주 완화) |
-| 최종 결정 | 자동 반영 가능 | 항상 사람이 기록 |
-
-```text
-함대 사전 등록 (threshold · 변형별 최소 표본 · 표본 예산 · holdout · 동시 상한 · 생존 비율 · guardrail · 종료 규칙)
-→ 웨이브 판정: guardrail 위반 컷 → 표본 부족 재수집 → 원시 delta 순위 → 생존 비율 컷
-→ 다음 웨이브 배분 또는 중단 (예산 소진 · 전멸)
-→ 후보가 1개로 수렴하면 신규 표본의 확정 웨이브 — 통과 시 승격 확정, 미달 시 강등
-→ 승격 확정도 제안일 뿐 — 최종 결정은 사람이 기록
-```
-
-- **정책이 사람의 일** — AI가 변형 후보를 대량 생성해도, 사람은 변형 선택자가 아니라 정책 설계자·최종 결정권자로 이동합니다. 함대의 컷·승급·수렴은 전부 결정적 TypeScript가 계산합니다.
-- **기존 판정의 재사용** — 변형별 판정은 단일 실험과 동일한 `evaluateExperiment`를 그대로 사용합니다. 함대는 순위·컷·예산 배분만 더합니다.
-- **안전 우선, 근거 우선** — guardrail 위반은 delta가 최고여도 컷하고, 표본 부족은 컷이 아니라 재수집입니다. 예산 초과는 음수로 그대로 드러냅니다.
-- **업계 관행의 결정적 채택** — GrowthBook·PostHog·Eppo가 쓰는 최소 노출 게이트와 guardrail 마진 컷은 같은 구조로 구현했고, SRM 통계 검정은 결정적 배분 이상 경고로, 승자의 저주 완화는 신규 표본 확정 웨이브로, 누적 효과 관찰은 holdout 예약으로 채택했습니다.
-- **위조 불가능한 이력** — 함대 판정은 웨이브 입력과 함께 저장되고, 백업 복원 시 전부 재계산해 대조합니다. 일치하지 않는 판정은 거부됩니다.
-
-워크스페이스에서는 실험 단계 안의 **함대 모드**로 사용합니다: 변형 목록과 정책을 사전 등록하고, 웨이브 관찰을 입력하면 판정 테이블과 다음 웨이브 배분(또는 수렴·소진 중단 사유)이 표시됩니다. first-party 수집을 쓰면 웨이브 관찰을 손으로 옮길 필요가 없습니다 — 이벤트 속성의 변형 배정 키로 변형별 전환이 자동 집계되어 웨이브 폼에 채워집니다(함대 판독 측정 스킬). AI를 켜면 변형 후보 텍스트도 제안받을 수 있지만, 후보는 사람이 검토해 목록에 추가해야 변형이 되고 수치·판정은 절대 제안되지 않습니다. 배경 리서치와 채택·거부 근거는 [Experiment Fleet Research](features/experiment-fleet/research.md)와 [ADR-0002](docs/adrs/0002-experiment-fleet.md)에 정리되어 있습니다.
-
-## 방향
-
-현재 버전은 분석 export(CSV)를 수동으로 연결하는 evidence-to-decision 워크스페이스이며, 위 harness 구조를 다음 단계들로 구현합니다.
-
-| 단계 | 내용 | 상태 |
-|---|---|---|
-| Evidence-to-decision 루프 | 8단계 Measure Loop, 결정적 지표 계산, 사전 등록 실험, human decision | **구현** |
-| Source adapter 계약 | 모든 행동 데이터 소스를 동일한 evidence 스키마로 정규화하는 인터페이스 | **구현** |
-| First-party SDK | 스크립트 한 줄로 페이지뷰·클릭·rage/dead click·스크롤·세션 수집 | **구현** · 실수집은 사이트 프로비저닝 후 |
-| Ingest 서버 | 자체 이벤트 수신, 세션화, 90일 보존 | **구현** · Supabase/Upstash 연결 대기 |
-| Measurement harness | 질문을 입력하면 퍼널 이탈·마찰 신호·여정 연속성·함대 판독 측정이 구성 | **구현** (스킬 4종) |
-| External connectors | PostHog read-only 어댑터 | **구현** · 실계정 검증 대기 |
-| Experiment fleet | 사전 등록 정책 아래 변형 함대를 웨이브로 컷·승급하고, holdout·신규 표본 확정 웨이브·AI 변형 후보까지 갖춘 결정적 함대 | **구현** |
-| Session replay | 별도 사전 동의·하드 마스킹·30일 보존·네트워크 차단 sandbox 재생을 전제로 한 세션 녹화 | **구현 · loopback dogfood 활성** (owner 자기 세션). 공개 cohort 확대는 영향평가 §4 서명 후 |
-
-상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다. "대기" 표기는 코드·테스트가 완료되었고 외부 계정 연결만 남았다는 뜻입니다.
-
-## 현재 구현
-
-| Capability | 상태 |
-|---|---|
-| 여러 개인 프로젝트와 브라우저 자동 저장 | 구현 |
-| versioned JSON 백업·복원과 손상 데이터 복구 | 구현 |
-| 제품 URL의 안전한 metadata·heading·navigation 추출 | 구현 |
-| KPI 정의·확정 | 구현 |
-| 실제 CSV 검증·퍼널 전환·이탈 계산 | 구현 |
-| UX 마찰 후보·근거·가설 편집 | 구현 |
-| 실험 사전 등록과 Before/After·guardrail 판정 | 구현 |
-| Human Decision·Markdown 리포트 | 구현 |
-| Playwright E2E — 8단계 루프·복구·키보드·모바일·harness·fleet | 구현 |
-| 질문 → 측정 → Evidence 적용 (퍼널 이탈·마찰 신호·여정 연속성·함대 판독) | 구현 |
-| First-party SDK와 ingest 파이프라인 (동의 게이트·마스킹 기본) | 구현, 실수집은 프로비저닝 후 |
-| PostHog read-only 어댑터 | 구현, 실계정 검증 대기 |
-| Experiment fleet — 함대 사전 등록·웨이브 컷·배분·노출 불균형 경고·holdout·확정 웨이브·워크스페이스 UI·리포트 | 구현 |
-| Workspace 스키마 v3 — 함대 이력 저장, v1·v2 무손실 승격, 복원 시 판정 재계산 검증 | 구현 |
-| 근거 기반 AI 진단·가설 제안과 함대 변형 후보 | 선택 기능, loopback development에서 명시적 활성화 필요 |
-| Session replay — 별도 동의 게이트·엔진 무관 하드 마스킹·bounded chunk·ingest·30일 hard delete·visitor 삭제·loopback owner-only read·qualitative Evidence 참조·rrweb 2.1.0 엔진 바인딩·네트워크 차단 sandbox player·owner dogfood 레코더 | 구현 · loopback dogfood 활성 (gate 1~9 서명), 공개 cohort 확대는 영향평가 §4 서명 후 |
-| 인증·팀 workspace | 범위 밖, 다중 사용자 전 RLS 전제 |
-
-## 제품 흐름
+| 단계 | 화면       | 하는 일                                                                             | 남는 것                |
+| ---- | ---------- | ----------------------------------------------------------------------------------- | ---------------------- |
+| 1    | Context    | 제품 URL · 핵심 사용자 · 핵심 가치 행동 · 측정 목표를 정합니다                      | 제품 프로필            |
+| 2    | KPI        | 정의 · 계산식 · 측정 기간 · 데이터 출처를 확정합니다                                | 확정 KPI               |
+| 3    | Measure    | 퍼널 CSV를 올리거나 하네스로 측정해 단계별 전환과 이탈을 계산합니다                 | 퍼널 · 최대 이탈 구간  |
+| 4    | Diagnose   | 관찰 · 근거 · 가능한 원인 · 빠진 근거를 나눠 마찰 후보를 씁니다                     | 마찰 후보 · Evidence   |
+| 5    | Hypothesis | 변경안 · 예상 행동 · 대안 설명을 갖춘 가설을 확정합니다                             | 검증 가설              |
+| 6    | Experiment | 성공 · 실패 · guardrail · 표본 · 기간 · 종료 규칙을 등록합니다(A/B 한 쌍 또는 함대) | 사전 등록 실험         |
+| 7    | Validate   | 변경 전후 값을 넣으면 practical threshold로 판정합니다                              | verdict                |
+| 8    | Decide     | 사람의 결정과 다음 행동을 기록하고 리포트를 내보냅니다                              | 결정 · Markdown 리포트 |
 
 ```mermaid
 %%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
@@ -137,29 +59,198 @@ flowchart TD
   class Q entry
 ```
 
-1. 공개 제품 URL과 대상 사용자, 핵심 가치 행동, 목표를 입력합니다.
-2. KPI 정의, 계산 방식, 측정 기간과 데이터 출처를 확정합니다.
-3. 퍼널 CSV를 업로드하거나 harness 측정으로 전환율, 이탈률과 최대 이탈 구간을 계산합니다.
-4. 관찰·근거·가능한 원인·누락 근거를 구분해 UX 마찰 후보를 만듭니다.
-5. 변경안, 예상 행동, 대안 설명이 포함된 가설을 확정합니다.
-6. 성공·실패·guardrail·표본·기간·종료 규칙을 사전 등록합니다. 후보가 여러 개면 **함대 모드**로 변형 목록·표본 예산·생존 비율·holdout까지 한 번에 등록합니다.
-7. 변경 전후 값을 입력해 practical threshold 기반 verdict를 계산합니다. 함대는 웨이브 컷을 거쳐 신규 표본 확정 웨이브로 승격을 확정합니다.
-8. 사람의 결정과 다음 행동을 기록하고 Markdown 리포트를 내보냅니다.
+## 기능
+
+### 측정 하네스
+
+**질문 유형 → 측정 스킬 → 데이터 능력 매칭 → 결정적 측정 → Evidence 초안.**
+
+<img src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/assets/demos/harness.gif" width="800" alt="진단 단계에서 가입 퍼널의 가장 큰 이탈을 묻는 질문으로 측정을 실행해 첫 책 등록과 첫 노트 작성 사이 이탈률 63.9%와 출처·표본이 붙은 초안을 확인하고 Evidence로 적용하는 모습">
+
+- **이럴 때** — 「가입 퍼널에서 가장 큰 이탈은 어디인가요?」, 「연동 방식 선택 화면에서 반복 클릭이 보이나요?」, 「가입한 사용자가 첫 핵심 행동까지 이어지나요?」
+- **스킬 4종** — 퍼널 이탈 · 마찰 신호(rage · dead click) · 여정 연속성 · 함대 판독. 스킬은 필요한 데이터 능력(`funnel` · `interaction` · `paths` · `segments`)을 선언하고 어댑터는 제공하는 능력을 선언해서, 실행 전에 짝이 맞는 조합만 고를 수 있습니다.
+- **표본이 모자라면 숫자를 만들지 않음** — 관찰 표본이 30개보다 적으면 수치 없이 「표본 부족」을 돌려줍니다. 표본 100개 미만은 신뢰도 low, 1,000개 미만은 medium으로 Evidence에 함께 적힙니다.
+- **초안과 적용을 분리** — 측정 결과는 초안으로 머물고, 적용을 눌러야 저장됩니다. 끝난 기간의 같은 질문은 세션 캐시를 다시 씁니다.
+- **소스는 어댑터로** — first-party SDK가 1호, PostHog read-only가 2호 어댑터입니다. 새 소스는 같은 어댑터 계약을 구현하면 기존 스킬이 그대로 동작합니다.
+
+<details>
+<summary>측정 결과가 Evidence가 된 모습</summary>
+
+```json
+{
+  "id": "harness-first-party-9b2e4c…-0",
+  "sourceKind": "calculated",
+  "direction": "context",
+  "observation": "첫 책 등록에서 첫 노트 작성 사이의 이탈률은 63.9%로 관찰되었습니다.",
+  "detail": "퍼널 전환 및 이탈 · completedUsers=430, enteredUsers=4200, largestDropOffRate=63.9, totalConversion=10.2 · 근거: 관찰 표본 4200개를 기준으로 한 순서형 등급입니다. · 한계: 표본 규모만 반영하며 인과관계나 통계적 유의성을 나타내지 않습니다.",
+  "provenance": {
+    "source": "UX MeasureLab Events",
+    "observedAt": "2026-10-28T09:00:00.000Z",
+    "period": "2026-10-01T00:00:00.000Z ~ 2026-10-28T00:00:00.000Z",
+    "segment": "전체 사용자"
+  },
+  "sourceRef": {
+    "adapterId": "first-party",
+    "capability": "funnel",
+    "queryHash": "9b2e4c…",
+    "sampleSize": 4200,
+    "confidence": "high"
+  }
+}
+```
+
+데모와 같은 퍼널(방문 4,200 → 가입 2,310 → 첫 책 등록 1,190 → 첫 노트 작성 430)을 측정한 결과입니다. `queryHash`는 정규화한 질문의 SHA-256이라, 이 근거가 어떤 질문 · 어댑터 · 표본에서 나왔는지 나중에 되짚을 수 있습니다.
+
+</details>
+
+### 실험 함대
+
+**사전 등록한 정책 아래에서 변형 여러 개를 웨이브로 걸러 내고, 남은 1개는 새 표본으로 한 번 더 확인합니다.**
+
+<img src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/assets/demos/fleet.gif" width="800" alt="함대 모드에서 변형 두 개와 정책을 사전 등록하고 측정에서 변형별 관찰을 불러와 웨이브 1에서 A안 승급과 B안 컷을 판정한 뒤 신규 표본 확정 웨이브를 통과해 승격을 확정하는 모습">
+
+- **등록하는 정책** — 성공 · 실패 기준(pp), 변형별 최소 표본, 웨이브 기간, 동시 변형 상한, 생존 비율, 전체 표본 예산, holdout 몫, guardrail, 종료 규칙.
+- **웨이브 판정 순서** — guardrail 위반은 delta가 가장 높아도 컷 → 표본이 모자란 변형은 컷하지 않고 재수집 → 원시 delta 순위 → 생존 비율 컷. 변형별 판정은 단일 실험과 같은 함수(`evaluateExperiment`)를 씁니다.
+- **같은 데이터로 승격하지 않음** — 후보가 1개로 모이면 새 표본으로 확정 웨이브를 한 번 더 돌리고, 기준에 못 미치면 강등합니다.
+- **예산과 holdout** — 예산을 넘긴 배분은 음수로 그대로 드러냅니다. holdout 몫은 어떤 변형에도 배정하지 않아 누적 효과를 볼 수 있습니다.
+- **측정에서 바로 채우기** — first-party 이벤트의 변형 배정 키로 변형별 전환을 집계해 웨이브 입력을 채웁니다(함대 판독 스킬). guardrail 값은 직접 넣습니다.
+- **AI 변형 후보** — 켜 두면 Evidence를 근거로 변형 문구 후보를 받습니다. 후보는 사람이 검토해 목록에 넣어야 변형이 되고, 수치와 판정은 제안하지 않습니다.
+
+<details>
+<summary>밴딧 · 자동 판정 방식과 비교</summary>
+
+| 항목      | 확률 배분 · 자동 판정    | experiment fleet                                            |
+| --------- | ------------------------ | ----------------------------------------------------------- |
+| 변형 후보 | 생성 후 자동 투입        | AI는 제안만, 사람이 검토해 등록                             |
+| 트래픽    | 확률적으로 다시 배분     | 사전 등록 정책의 웨이브 컷                                  |
+| 판정      | 통계 추정 또는 모델 판단 | practical threshold를 코드가 계산, 복원 때 다시 계산해 대조 |
+| 승자 확정 | 같은 데이터로 선언       | 신규 표본 확정 웨이브                                       |
+| 최종 결정 | 자동 반영 가능           | 사람이 기록                                                 |
+
+웨이브 판정은 보정하지 않은 다중 비교라서, 결과 옆에 동시에 판정한 변형 수를 함께 적습니다. 배경 조사와 채택 · 기각 근거는 [Experiment Fleet Research](docs/research/experiment-fleet.md)와 [ADR-0002](docs/adrs/0002-experiment-fleet.md)에 있습니다.
+
+</details>
+
+### 사전 등록과 판정
+
+**판정 규칙은 실험 전에 등록한 숫자로만 정해집니다.**
+
+<img src="https://raw.githubusercontent.com/Power-xc/ux-measure-lab/main/assets/demos/validate.gif" width="800" alt="변경 전 18.6%와 변경 후 24% 전환을 넣자 +5.4pp가 사전 등록한 +5pp 기준을 넘고 guardrail을 통과해 가설 지지로 판정되고, Adopt 결정을 기록해 Markdown 리포트를 내보내는 모습">
+
+| 판정                 | 조건                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| 근거 부족            | 두 집단 중 하나라도 최소 표본에 못 미치거나, 관찰 기간이 계획보다 짧음                         |
+| 가설 지지            | delta가 성공 기준 이상이고 guardrail 통과                                                      |
+| 부분 지지            | delta가 성공 기준 이상이지만 guardrail 위반, 또는 성공 기준엔 못 미치지만 실패 기준과 0보다 큼 |
+| 가설을 지지하지 않음 | 위에 해당하지 않음                                                                             |
+
+판정 다음에는 사람이 Adopt · Iterate · Collect more data · Stop 중 하나와 근거, 다음 행동을 적습니다. 시스템 권고와 사람의 결정은 리포트에 따로 남습니다.
+
+<details>
+<summary>내보낸 Markdown 리포트</summary>
+
+```markdown
+# 독서 기록 앱 — Experiment Report
+
+- Product: 독서 기록 앱
+- Goal: 가입 후 첫 노트 작성률을 높인다
+- Data source: funnel.csv
+- Recorded: 2026-11-02T07:03:44.477Z
+
+## KPI
+첫 노트 작성률 — 가입한 사용자 중 7일 안에 첫 노트를 작성한 비율
+
+## Funnel
+| Step | Users |
+|---|---:|
+| 방문 | 4,200 |
+| 가입 | 2,310 |
+| 첫 책 등록 | 1,190 |
+| 첫 노트 작성 | 430 |
+
+## Evidence
+- [calculated] 첫 책 등록 → 첫 노트 작성 구간에서 760명, 63.9%가 이탈했다. — funnel.csv
+
+## Hypothesis
+- Observation: 책을 등록한 사용자의 64%가 첫 노트 없이 이탈한다
+- Change: 책 등록 직후 한 줄 노트 입력창을 보여준다
+- Expected behavior: 등록 직후 첫 노트 작성이 늘어난다
+- Alternative explanation: 책 등록 UI가 노트 기능을 가린다
+- Missing evidence: 등록 후 화면 체류 시간
+
+## Preregistered criteria
+- Success: +5pp
+- Failure: 0pp 이하
+- Guardrail: 책 등록 이탈률 +1pp 이하
+- Stop rule: 계획 기간과 최소 표본을 모두 충족한 뒤 종료
+
+## Result
+- Baseline: 18.6%
+- Variant: 24%
+- Absolute delta: 5.4pp
+- Guardrail: pass
+- Deterministic verdict: support
+
+## Decision
+- System recommendation: 사전 기준을 충족했습니다. 적용 범위를 정하고 guardrail을 계속 관찰하세요.
+- Human decision: adopt
+- Rationale: 첫 노트 작성률이 5.4%p 올랐고 guardrail은 유지됐다
+- Next action: 신규 가입자 10%에게 먼저 배포한다
+```
+
+</details>
+
+### 수집 SDK와 ingest
+
+운영 중인 제품에 스크립트를 넣으면 페이지뷰 · 클릭 · rage · dead click · 스크롤 · 경로 이동 · 세션을 모읍니다.
+
+```html
+<script>
+  (function (w, d, s, k) {
+    w.ml =
+      w.ml ||
+      function () {
+        (w.ml.q = w.ml.q || []).push(arguments);
+      };
+    w.ml.k = k;
+    var e = d.createElement(s);
+    e.async = 1;
+    e.src = "/ml.js";
+    var f = d.getElementsByTagName(s)[0];
+    f.parentNode.insertBefore(e, f);
+  })(window, document, "script", "<site-key>");
+  ml("init", { requireConsent: true, host: "/api/ingest" });
+</script>
+```
+
+- **동의가 먼저** — `requireConsent`가 기본으로 켜져 있고 GPC · DNT 신호를 존중합니다. 입력값은 어떤 경우에도 모으지 않습니다.
+- **쓰기 경계** — `/api/ingest`는 사이트 키 해시와 Origin 허용 목록을 확인하고, 배치 크기 상한과 durable rate limit을 둡니다. 이벤트는 90일 뒤 지웁니다.
+- **서버 설정이 없으면 닫힘** — Supabase · Upstash 값이 없으면 ingest는 401을, 측정은 빈 집계를 돌려줍니다. 라이브 데모가 이 상태입니다.
+- 사이트 프로비저닝과 스니펫 발급은 `node scripts/provision-site.mjs`, 운영 절차는 [Runbook](docs/runbook.md)에 있습니다.
+
+### 세션 리플레이
+
+이탈 구간의 맥락을 보려고 owner 자신의 세션을 녹화 · 재생하는 기능입니다. 지금은 owner 1인의 loopback 환경에서만 켜집니다.
+
+- 녹화 동의를 수집 동의와 따로 받고, 녹화 엔진은 동의 전에는 불러오지도 않습니다.
+- 기록할 때 엔진과 무관한 마스킹을 한 번, 서버 ingest에서 개인정보가 섞인 payload 전체 거부를 한 번, 재생 직전 스크럽을 한 번 더 합니다.
+- 재생은 스크립트 · 네트워크 · 부모 창 접근을 막은 sandbox 프레임에서 하고, 녹화는 30일 뒤 지웁니다.
+- 공개 cohort로 넓히는 일은 [개인정보 영향평가](docs/replay-privacy-impact.md) §4 서명 이후로 남겨 두었습니다.
 
 ## 빠른 시작
 
-현재 품질 게이트는 Node 26에서 검증했습니다.
+Node 26에서 검증했습니다.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-브라우저에서 `http://127.0.0.1:3000`을 열면 됩니다. 개발·로컬 production 명령은 서버를 loopback에만 바인딩합니다. 모든 프로젝트 데이터는 기본적으로 현재 브라우저의 `localStorage`에만 저장됩니다. 중요한 작업은 상단의 **백업**으로 JSON 파일을 보관하세요.
+`http://127.0.0.1:3000`을 엽니다. 개발 서버와 로컬 production 서버는 loopback에만 바인딩합니다. 프로젝트 데이터는 현재 브라우저의 `localStorage`에만 저장되니, 중요한 작업은 상단 **백업**으로 JSON 파일을 받아 두세요.
 
 ### 퍼널 CSV
 
-UTF-8 comma-separated CSV와 다음 헤더 순서를 사용합니다. 한 파일은 1MB·100단계 이하이며, 사용자 수는 첫 단계부터 감소하거나 같아야 합니다.
+UTF-8 쉼표 구분, 아래 헤더 순서를 씁니다. 파일 하나는 1MB · 100단계 이하이고, 사용자 수는 첫 단계부터 줄거나 같아야 합니다.
 
 ```csv
 step_id,step_name,users
@@ -168,11 +259,11 @@ signup,가입 완료,540
 core_action,핵심 행동,210
 ```
 
-앱의 **샘플 데이터 사용**과 **CSV 템플릿 다운로드**로 바로 시작할 수도 있습니다.
+앱의 **샘플 사용**과 **CSV 템플릿 다운로드**로 바로 시작할 수도 있습니다.
 
-## 선택적 AI 설정
+### 선택적 AI 설정
 
-AI가 없어도 전체 Measure Loop를 완료할 수 있습니다. 실제 provider는 loopback에 바인딩된 `npm run dev`에서만 사용할 수 있습니다. `.env.local`에 서버 전용 값을 설정하고 명시적으로 활성화합니다.
+AI는 진단 · 가설 초안과 함대 변형 후보를 제안합니다. 실제 provider는 loopback에 바인딩된 `npm run dev`에서만 켜지고, `.env.local`에 서버 전용 값을 넣어 명시적으로 활성화합니다.
 
 ```bash
 UX_MEASURE_AI_ENABLED=true
@@ -180,47 +271,27 @@ OPENAI_API_KEY=your_server_key
 OPENAI_MODEL=gpt-5.6-luna
 ```
 
-`OPENAI_API_KEY`는 서버 route에서만 읽습니다. 제품 URL, raw HTML, raw CSV는 AI 요청에 포함하지 않습니다. AI 출력(진단·가설 제안과 함대 변형 후보)은 기존 evidence ID만 참조할 수 있고 KPI 수치, threshold, verdict와 human decision을 수정할 수 없습니다. 키가 없거나 timeout·provider·출력 검증에 실패하면 결정적 초안으로 복구합니다.
+- 키는 서버 route에서만 읽고, 제품 URL · raw HTML · raw CSV는 AI 요청에 넣지 않습니다.
+- AI 출력은 이미 있는 Evidence ID만 참조할 수 있고 KPI 수치 · threshold · verdict · 사람의 결정을 바꿀 수 없습니다.
+- 키가 없거나 timeout · provider 오류 · 출력 검증 실패가 나면 결정적 초안으로 돌아갑니다. production 빌드와 공개 배포는 설정이 있어도 항상 결정적 초안을 씁니다.
 
-Personal v1은 인증 없는 유료 API proxy가 되지 않도록 provider를 `NODE_ENV=development`에서만 활성화하고, `npm run dev`를 `127.0.0.1`에 고정합니다. production build와 공개 배포에서는 설정값이 있어도 결정적 fallback을 사용합니다. 공개 AI 기능은 인증과 durable user quota를 설계한 후 별도 버전에서 활성화합니다.
+## 판정 어휘
 
-## 품질 게이트
+화면 · 리포트 · 백업 JSON에서 같은 값을 같은 뜻으로 씁니다.
 
-```bash
-npm run typecheck
-npm run lint
-npm test
-npm run test:sdk
-npm run build
-npm audit --omit=dev
-npm run test:e2e
-```
-
-단위 테스트 235개는 CSV·퍼널·실험 판정·저장소 invariant·URL과 AI trust boundary에 더해 harness 계약, 측정 스킬, PostHog 어댑터, ingest 검증 파이프라인과 백엔드, experiment fleet(사전 등록·웨이브 컷·배분·노출 경고·holdout·확정 웨이브·스키마 재계산 검증·변형별 측정·웨이브 프리필·AI 후보 이중 검증), session replay 경계(envelope·privacy 전체 거부·보존·삭제·owner-only read)·재생 sandbox(엔진 바인딩 하드 옵션·재생 스크럽·문서 CSP·프레임 라우트)·dogfood 배선(loopback 사이트 프로비저닝·recorder·same-origin read·인크리멘탈 mutation 마스킹)을 다루고, SDK 테스트 83개는 동의 게이트·마스킹·검출 규칙·세션·전송과 replay 레코더(별도 동의·하드 새니타이저·quota·철회·엔진 주입)를 다룹니다. Playwright E2E 10종은 8단계 golden loop, 복구, 키보드, 390px reflow, harness 측정과 측정 프리필·확정 웨이브까지의 함대 흐름, 그리고 실제 vendored 번들로 loopback 경계에서 재생 sandbox의 무-네트워크·무-스크립트·부모 격리를 production build 기준으로 검증합니다. 전체 dogfood 루프(동의→녹화→ingest→owner-only 재생)와 저장 payload 마스킹은 loopback 실측으로 검증했습니다. 실제 검증 결과는 [Verification](docs/verification.md)에 기록합니다.
-
-## 데이터·보안 원칙
-
-- Evidence before opinion: 일반론보다 실제 행동 데이터와 provenance를 우선합니다.
-- Hypothesis, not conclusion: 상관관계를 원인으로 단정하지 않습니다.
-- Deterministic metrics: 전환율, delta, guardrail, verdict는 코드가 계산합니다.
-- Human-in-the-loop: AI 제안은 사용자가 검토하고 적용해야 저장됩니다.
-- Local-first: 브라우저 저장과 JSON 백업이 기본이며 서버 DB로 자동 전송하지 않습니다.
-- Untrusted by default: CSV, JSON, URL, HTML, AI 출력은 모두 외부 입력으로 검증합니다.
-- Consent-first collection: 자체 수집 단계는 사전 동의, 기본 입력 마스킹, 짧은 보존 기간을 출시 조건으로 설계합니다.
-
-상세 위협 모델과 운영 제한은 [Security](docs/security.md)를 참고하세요.
-
-## 현재 한계
-
-- 통계적 유의성이나 인과관계를 자동 판정하지 않습니다. 현재 verdict는 사전 등록한 practical threshold, 표본, 기간과 guardrail 규칙에 기반합니다.
-- URL 분석은 공개 HTML 한 페이지의 제한된 텍스트 맥락만 추출합니다. 운영 중인 제품 전체의 사용 여정을 이해하려면 행동 데이터가 필요하며, 이 간극을 메우는 것이 위 로드맵(first-party SDK와 measurement harness)의 핵심입니다.
-- 브라우저 데이터를 지우면 local workspace도 삭제됩니다. JSON 백업이 복구 수단입니다.
-- 회사용 권한, 협업, 감사 로그, 서버 동기화는 아직 없습니다.
-- 실제 OpenAI provider 호출은 사용자의 키와 opt-in 설정이 있어야 별도로 검증할 수 있습니다.
+| 어휘                                                                      | 뜻                                                                 |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `measured` · `calculated`                                                 | 수집 도구가 센 값 · 그 값으로 코드가 계산한 값                     |
+| `qualitative` · `benchmark`                                               | 세션 맥락 같은 정성 근거 · 외부 기준값                             |
+| `assumed` · `inferred`                                                    | 사람이 둔 가정 · 다른 근거에서 추론한 값 — 원인으로 단정하지 않음  |
+| `support` · `partial_support` · `not_supported` · `insufficient_evidence` | 가설 지지 · 부분 지지 · 지지하지 않음 · 근거 부족                  |
+| `advance` · `cull` · `needs_sample`                                       | 함대 웨이브의 승급 · 컷 · 표본 재수집                              |
+| `insufficient_sample` · `not_configured` · `unsupported_capability`       | 측정이 수치를 내지 않은 이유 — 표본 부족 · 소스 미설정 · 능력 없음 |
+| `adopt` · `iterate` · `collect_more_data` · `stop`                        | 사람의 결정 — 적용 · 수정 후 재실험 · 근거 추가 수집 · 중단        |
 
 ## 아키텍처
 
-상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 전체 그림과 핵심 결정의 이유만 요약합니다.
+상세 설계는 [Architecture](docs/architecture.md)와 ADR에 있고, 여기에는 전체 그림과 핵심 결정의 이유만 둡니다.
 
 ```mermaid
 %%{init: {"flowchart": {"subGraphTitleMargin": {"top": 8, "bottom": 8}, "rankSpacing": 34, "nodeSpacing": 24}, "themeVariables": {"fontSize": "13px"}}}%%
@@ -287,48 +358,71 @@ flowchart TD
 
 ### 스택 선정 이유
 
-Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 테스트는 `node:test`. 1인 개발과 local-first 전제에서 런타임 의존성을 Next/React 둘로 최소화했고(Supabase·Upstash·PostHog는 전부 fetch 직호출), 전환율·delta·verdict 같은 판정 로직은 프레임워크에 묶이지 않는 순수 TypeScript 모듈로 분리해 `node --test`로 즉시 검증합니다. 영속성은 versioned `localStorage` repository + JSON 백업 — 서버 DB보다 느슨하지만, 개인 워크스페이스에서 데이터 주권과 복구 경로가 더 중요하다고 판단했습니다.
+Next.js 16 App Router + React 19 + TypeScript + CSS Modules, 단위 테스트는 `node:test`입니다. 1인 개발과 로컬 우선 전제에서 런타임 의존성을 Next · React와 리플레이 엔진으로 줄였고, Supabase · Upstash · PostHog는 모두 `fetch`로 직접 호출합니다. 전환율 · delta · verdict 같은 판정 로직은 프레임워크에 묶이지 않은 순수 TypeScript 모듈이라 `node --test`로 바로 검증합니다. 영속성은 버전이 붙은 `localStorage` 저장소와 JSON 백업입니다. 서버 DB보다 느슨하지만, 개인 워크스페이스에서는 데이터 주권과 복구 경로가 더 중요하다고 판단했습니다.
 
 ### 구조 선정 이유
 
-`entities → features → widgets` 단방향 의존입니다. 어휘(capability·verdict·evidence)의 단일 출처는 entities이고, features는 그것을 재수출만 합니다. 외부 입력(CSV·JSON·URL·HTML·AI 출력·어댑터 응답)은 전부 trust boundary에서 runtime validation을 거치며, AI 제안 경로와 결정적 계산 경로를 코드 수준에서 분리해 AI가 수치를 만들 수 없게 했습니다. measurement harness와 experiment fleet이 모두 "계약 선언 → 자동 매칭 → 결정적 실행" 구조인 이유는, 소스와 스킬이 늘어나도 판정 코드를 재작성하지 않기 위해서입니다 ([ADR-0001](docs/adrs/0001-decision-layer.md), [ADR-0002](docs/adrs/0002-experiment-fleet.md)).
+`entities → features → widgets` 단방향 의존입니다. capability · verdict · evidence 같은 어휘는 entities가 단일 출처이고, features는 다시 내보내기만 합니다. CSV · JSON · URL · HTML · AI 출력 · 어댑터 응답은 모두 신뢰 경계에서 런타임 검증을 거치고, AI 제안 경로와 결정적 계산 경로를 코드에서 분리해 AI가 수치를 만들 수 없게 했습니다. 측정 하네스와 실험 함대가 모두 「계약 선언 → 자동 매칭 → 결정적 실행」 구조인 것은 소스와 스킬이 늘어나도 판정 코드를 다시 쓰지 않기 위해서입니다([ADR-0001](docs/adrs/0001-decision-layer.md), [ADR-0002](docs/adrs/0002-experiment-fleet.md)).
 
-session replay의 녹화 엔진은 SDK에 직접 넣지 않고 **주입 계약**(`RecordingEngine`)으로 분리했습니다. SDK를 의존성 0으로 유지하고, 동의 전에는 엔진 코드가 로드조차 되지 않게 하기 위해서입니다. 재생 안전은 단일 장치가 아니라 세 계층으로 나눴습니다 — 기록 시 엔진 무관 하드 새니타이저, 서버 ingest의 privacy 전체 거부, 재생 직전 payload 스크럽. 재생 프레임을 **loopback alias origin**(127.0.0.1 워크스페이스 ↔ localhost 프레임)에 둔 것은 측정으로 강제된 선택입니다: 완전 opaque sandbox(allow-scripts만) 문서는 자식 iframe에 접근할 수 없어 rrweb 재구성이 실패하고, alias origin은 브라우저가 프레임↔워크스페이스 교차출처 벽을 강제하게 하면서 프레임이 자기 재구성 iframe만 제어하게 합니다. 중첩 재구성 iframe이 문서 CSP를 상속하지 않으므로 원격 리소스 차단은 CSP가 아니라 재생 스크럽이 책임집니다.
+리플레이 녹화 엔진은 SDK에 넣지 않고 주입 계약(`RecordingEngine`)으로 분리했습니다. SDK 의존성을 0으로 두고, 동의 전에는 엔진 코드가 로드되지 않게 하려는 선택입니다. 재생 프레임을 loopback alias origin(127.0.0.1 워크스페이스 ↔ localhost 프레임)에 둔 것은 측정으로 정한 결과입니다. 스크립트만 허용한 완전 opaque sandbox에서는 rrweb가 자식 iframe을 재구성하지 못했고, alias origin은 브라우저가 프레임과 워크스페이스 사이 교차 출처 벽을 지키게 하면서 프레임이 자기 재구성 iframe만 다루게 합니다.
 
 ### 포기한 것
 
-- **자체 analytics 플랫폼** — 수집·쿼리·replay 인프라 대신 기존 도구 위의 decision layer로 시작했습니다. 통제력을 포기하고 검증 속도를 얻는 트레이드오프입니다 (ADR-0001).
-- **밴딧 자동 배분과 AI 판정** — 대량 실험 대안으로 검토했지만 확률적 배분은 재현·감사가 어려워 결정적 successive halving을 선택했습니다 (ADR-0002).
-- **p-value 자동 판정** — 소규모 트래픽에서 오용 위험이 커서 practical threshold + 표본·기간 규율로 대체했습니다.
-- **인증·팀 협업·서버 동기화** — Personal v1 범위 밖. 다중 사용자 전 RLS를 전제 조건으로 남겼습니다.
+- **자체 분석 플랫폼** — 수집 · 쿼리 · 재생 인프라를 처음부터 만드는 대신 기존 도구 위의 결정 계층으로 시작했습니다. 통제력을 내주고 검증 속도를 얻었습니다(ADR-0001).
+- **밴딧 자동 배분과 AI 판정** — 대량 실험 대안으로 검토했지만 확률적 배분은 재현 · 감사가 어려워 결정적 successive halving을 골랐습니다(ADR-0002).
+- **p-value 자동 판정** — 트래픽이 작은 제품에서 오용 위험이 커서 practical threshold와 표본 · 기간 규율로 대신했습니다.
+- **인증 · 팀 협업 · 서버 동기화** — 개인용 v1 범위 밖입니다. 다중 사용자 전에는 RLS를 먼저 갖춰야 한다는 조건으로 남겼습니다.
 
-## 문서
+## 상태
 
-- [Product Brief](docs/product-brief.md)
-- [Measurement Harness Spec](features/measurement-harness/spec.md)
-- [Experiment Fleet Spec](features/experiment-fleet/spec.md)
-- [Experiment Fleet Research](features/experiment-fleet/research.md)
-- [Session Replay Spec](features/session-replay/spec.md)
-- [Session Replay Privacy Impact (dogfood 범위 서명)](docs/replay-privacy-impact.md)
-- [Personal Product v1 Spec](features/personal-product-v1/spec.md)
-- [Architecture](docs/architecture.md)
-- [Data Model](docs/data-model.md)
-- [Security](docs/security.md)
-- [Runbook](docs/runbook.md)
-- [Verification](docs/verification.md)
-- [Dogfood Template](docs/dogfood-template.md)
-- [Decision Layer ADR](docs/adrs/0001-decision-layer.md)
-- [Experiment Fleet ADR](docs/adrs/0002-experiment-fleet.md)
-- [Research Evidence Registry](research/evidence-registry.md)
-- [Research Claim Audit](research/claim-audit.md)
+| 영역                                                    | 상태                                                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 8단계 Measure Loop · 결정적 판정 · 백업 · 복원 · 리포트 | 구현                                                                                       |
+| 측정 하네스 · 어댑터 계약 · 워크스페이스 스키마 v3      | 구현 — 스킬 4종 사용 가능, 전후 비교 · KPI 추적 · 세그먼트 격차 · 재현 맥락은 카탈로그에만 |
+| 수집 SDK · ingest                                       | 구현 — 로컬에서 실수집 검증, 라이브 데모는 서버 설정 없이 운영                             |
+| PostHog read-only 어댑터                                | 구현 — 실계정 측정 검증 전                                                                 |
+| 실험 함대 · holdout · 확정 웨이브 · AI 변형 후보        | 구현                                                                                       |
+| 세션 리플레이                                           | 구현 — owner loopback dogfood만, 공개 cohort는 영향평가 서명 후                            |
+| 인증 · 팀 workspace                                     | 범위 밖                                                                                    |
 
-## 개발
+상태는 [Verification](docs/verification.md)의 실행 증거를 따릅니다.
 
-프로젝트별 구현 규칙, 스택, 보안 경계는 위 문서와 각 `features/` 스펙에 정리되어 있습니다. 변경 전 관련 문서를 확인하고, 아래 품질 게이트를 통과한 뒤 커밋합니다.
+### 한계
+
+- 통계적 유의성과 인과관계를 자동으로 판정하지 않습니다. verdict는 사전 등록한 practical threshold · 표본 · 기간 · guardrail 규칙만 봅니다.
+- URL 분석은 공개 HTML 한 페이지에서 제한된 텍스트 맥락만 뽑습니다. 제품 전체의 사용 여정은 행동 데이터로 봐야 합니다.
+- 브라우저 데이터를 지우면 로컬 워크스페이스도 사라집니다. JSON 백업이 복구 수단입니다.
+- 회사용 권한, 협업, 감사 로그, 서버 동기화는 없습니다.
+
+## 검증
 
 ```bash
 npm run typecheck
 npm run lint
-npm test
+npm test            # 단위 235개
+npm run test:sdk    # SDK 83개
 npm run build
+npm audit --omit=dev
+npm run test:e2e    # Playwright 10개
 ```
+
+단위 테스트는 CSV · 퍼널 · 실험 판정 · 저장소 불변식 · URL과 AI 신뢰 경계, 하네스 계약 · 측정 스킬 · PostHog 어댑터, ingest 검증 파이프라인, 함대 엔진(사전 등록 · 웨이브 컷 · 배분 · holdout · 확정 웨이브 · 복원 시 재계산), 리플레이 경계(privacy 거부 · 보존 · 삭제 · owner-only 읽기 · 재생 스크럽)를 다룹니다. SDK 테스트는 동의 게이트 · 마스킹 · 검출 규칙 · 세션 · 전송과 리플레이 레코더를 다룹니다. E2E는 8단계 완주, 새로고침 복구, 키보드 접근, 390px 레이아웃, 하네스 측정, 함대 흐름, 실제 재생 번들의 sandbox 격리를 production 빌드로 확인합니다. CI는 push마다 같은 명령을 돌립니다.
+
+README의 GIF는 실제 앱을 [`demos/`](demos/)의 스크립트로 녹화한 것이라, 화면이 바뀌면 같은 명령으로 다시 만들 수 있습니다.
+
+## 문서
+
+| 문서                                                                                                  | 내용                                                  |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [Product Brief](docs/product-brief.md)                                                                | 사용자 문제 · 첫 사용자 · 성공 정의                   |
+| [Architecture](docs/architecture.md) · [Data Model](docs/data-model.md)                               | 계층 · 신뢰 경계 · 저장 스키마                        |
+| [Security](docs/security.md) · [Runbook](docs/runbook.md)                                             | 위협 모델 · 운영 제한 · 프로비저닝                    |
+| [Verification](docs/verification.md)                                                                  | 테스트 목록 · 브라우저 · 배포 · 실수집 증거           |
+| [Specs](docs/specs/)                                                                                  | Personal v1 · 측정 하네스 · 실험 함대 · 세션 리플레이 |
+| [Research](docs/research/)                                                                            | 설계 근거 조사와 주장 감사                            |
+| [ADR-0001](docs/adrs/0001-decision-layer.md) · [ADR-0002](docs/adrs/0002-experiment-fleet.md)         | 결정 계층 · 실험 함대                                 |
+| [Replay Privacy Impact](docs/replay-privacy-impact.md) · [Dogfood Template](docs/dogfood-template.md) | 리플레이 영향평가 · dogfood 기록 양식                 |
+
+## 라이선스
+
+[MIT](LICENSE)
