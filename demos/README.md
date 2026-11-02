@@ -10,7 +10,7 @@
 
 ```bash
 npm run build
-PORT=3100 npx next start --hostname 127.0.0.1 -p 3100
+npx next start --hostname 127.0.0.1 -p 3100
 ```
 
 ## 실행
@@ -40,6 +40,7 @@ node demos/record.mjs fleet social
 | `DEMO_BASE_URL` | `http://127.0.0.1:3000` | 앱 주소. 연결되지 않으면 안내 메시지를 내고 종료합니다. |
 | `FFMPEG_PATH` | `/opt/homebrew/bin/ffmpeg` | ffmpeg 실행 파일 |
 | `DEMO_DEBUG` | 없음 | 설정하면 hero 단계별 프레임 수를 출력합니다. |
+| `DEMO_REPORT_PATH` | 없음 | 설정하면 hero · validate 장면에서 내려받은 Markdown 리포트를 이 경로에 저장합니다. README 예시를 갱신할 때 씁니다. |
 
 ## 구조
 
