@@ -2,6 +2,13 @@
   "name": "ux-measure-lab",
   "version": "0.1.0",
   "private": true,
+  "description": "UX measurement and experimentation workspace: question-driven measurement, pre-registered experiments with deterministic verdicts, and human decisions.",
+  "license": "MIT",
+  "homepage": "https://github.com/Power-xc/ux-measure-lab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Power-xc/ux-measure-lab.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
